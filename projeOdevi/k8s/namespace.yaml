@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mikroservis
+---
+# MySQL Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: mikroservis
+type: Opaque
+data:
+  mysql-root-password: cm9vdA==  # base64 encoded "root"
+  mysql-password: cm9vdA==       # base64 encoded "root"

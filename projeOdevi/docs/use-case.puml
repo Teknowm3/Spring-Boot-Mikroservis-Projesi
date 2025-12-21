@@ -1,0 +1,73 @@
+@startuml Use Case Diagram
+
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+title Mikroservis Sistemi - UML Use Case Diyagramı
+
+actor "Misafir\nKullanıcı" as guest
+actor "Kayıtlı\nKullanıcı" as user
+actor "Admin" as admin
+
+rectangle "Authentication Service" {
+    usecase "Kayıt Ol\n(Register)" as UC1
+    usecase "Giriş Yap\n(Login)" as UC2
+    usecase "Token Doğrula\n(Validate Token)" as UC3
+    usecase "JWT Token Al" as UC4
+}
+
+rectangle "User Service" {
+    usecase "Profil Görüntüle\n(GET)" as UC5
+    usecase "Profil Güncelle\n(PUT)" as UC6
+    usecase "Profil Sil\n(DELETE)" as UC7
+    usecase "Tüm Kullanıcıları Listele\n(GET All)" as UC8
+    usecase "Yeni Kullanıcı Ekle\n(POST)" as UC9
+}
+
+rectangle "API Gateway" {
+    usecase "İstek Yönlendirme\n(Routing)" as UC10
+    usecase "Token Kontrolü\n(JWT Filter)" as UC11
+    usecase "Servis Keşfi\n(Service Discovery)" as UC12
+}
+
+' Guest relationships
+guest --> UC1 : Kayıt olmak için
+guest --> UC2 : Giriş yapmak için
+
+' User relationships
+user --> UC2 : Giriş yapmak için
+user --> UC5 : Kendi profilini görmek için
+user --> UC6 : Profilini güncellemek için
+user --> UC7 : Hesabını silmek için
+
+' Admin relationships
+admin --> UC8 : Tüm kullanıcıları görmek için
+admin --> UC9 : Yeni kullanıcı eklemek için
+admin --> UC7 : Kullanıcı silmek için
+admin --> UC6 : Kullanıcı güncellemek için
+
+' Include relationships
+UC1 ..> UC4 : <<include>>
+UC2 ..> UC4 : <<include>>
+UC5 ..> UC3 : <<include>>
+UC6 ..> UC3 : <<include>>
+UC7 ..> UC3 : <<include>>
+UC8 ..> UC3 : <<include>>
+UC9 ..> UC3 : <<include>>
+
+' API Gateway extends
+UC10 ..> UC11 : <<extend>>
+UC10 ..> UC12 : <<extend>>
+
+note "Tüm /api/** istekleri\nAPI Gateway üzerinden geçer" as N1
+UC10 .. N1
+
+note right of UC4
+  JWT Token:
+  - 24 saat geçerli
+  - HS256 algoritması
+  - Kullanıcı bilgisi içerir
+end note
+
+@enduml

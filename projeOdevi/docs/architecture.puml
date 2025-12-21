@@ -1,0 +1,83 @@
+@startuml Mikroservis Mimarisi
+
+!define RECTANGLE class
+
+skinparam backgroundColor #f5f5f5
+skinparam componentStyle rectangle
+skinparam defaultFontSize 12
+
+title Spring Boot Mikroservis Mimarisi
+
+actor "Client\n(Web/Mobile)" as client
+
+cloud "Kubernetes Cluster" {
+    
+    rectangle "Ingress Controller" as ingress #lightblue
+    
+    package "API Gateway\n:8080" as gateway #orange {
+        [Spring Cloud Gateway]
+        [Route Definitions]
+        [JWT Validation Filter]
+    }
+    
+    package "Service Discovery" as eureka #lightgreen {
+        [Eureka Server\n:8761]
+    }
+    
+    package "Auth Service\n:8081" as auth #lightyellow {
+        [AuthController]
+        [AuthService]
+        [JwtUtil]
+        [SecurityConfig]
+    }
+    
+    package "User Service\n:8082" as user #lightpink {
+        [UserController]
+        [UserService]
+        [UserRepository]
+    }
+    
+    database "MySQL\nDatabase" as mysql #lightgray {
+        [authdb]
+        [userdb]
+    }
+}
+
+client --> ingress : HTTPS
+ingress --> gateway : HTTP
+
+gateway --> auth : /api/auth/**
+gateway --> user : /api/users/**
+
+auth ..> eureka : Register
+user ..> eureka : Register
+gateway ..> eureka : Discover Services
+
+auth --> mysql : JPA/Hibernate
+user --> mysql : JPA/Hibernate
+
+note right of gateway
+  **API Gateway Özellikleri:**
+  - Merkezi giriş noktası
+  - JWT Token doğrulama
+  - Rate limiting
+  - Load balancing
+end note
+
+note right of auth
+  **Auth Endpoints:**
+  - POST /api/auth/register
+  - POST /api/auth/login
+  - GET /api/auth/validate
+end note
+
+note right of user
+  **User Endpoints (CRUD):**
+  - GET /api/users
+  - GET /api/users/{id}
+  - POST /api/users
+  - PUT /api/users/{id}
+  - DELETE /api/users/{id}
+end note
+
+@enduml
