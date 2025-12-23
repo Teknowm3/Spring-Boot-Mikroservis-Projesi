@@ -15,6 +15,9 @@ rectangle "Authentication Service" {
     usecase "Giriş Yap\n(Login)" as UC2
     usecase "Token Doğrula\n(Validate Token)" as UC3
     usecase "JWT Token Al" as UC4
+    usecase "Oturum Bilgisi\n(/me)" as UC13
+    usecase "Admin: Kullanıcı Oluştur" as UC14
+    usecase "Admin: Kullanıcı Sil" as UC15
 }
 
 rectangle "User Service" {
@@ -40,12 +43,15 @@ user --> UC2 : Giriş yapmak için
 user --> UC5 : Kendi profilini görmek için
 user --> UC6 : Profilini güncellemek için
 user --> UC7 : Hesabını silmek için
+user --> UC13 : Oturum doğrulamak için
 
 ' Admin relationships
 admin --> UC8 : Tüm kullanıcıları görmek için
 admin --> UC9 : Yeni kullanıcı eklemek için
 admin --> UC7 : Kullanıcı silmek için
 admin --> UC6 : Kullanıcı güncellemek için
+admin --> UC14 : Yetkili kullanıcı oluşturmak için
+admin --> UC15 : Kullanıcı/Profil silmek için
 
 ' Include relationships
 UC1 ..> UC4 : <<include>>
@@ -55,6 +61,9 @@ UC6 ..> UC3 : <<include>>
 UC7 ..> UC3 : <<include>>
 UC8 ..> UC3 : <<include>>
 UC9 ..> UC3 : <<include>>
+UC13 ..> UC3 : <<include>>
+UC14 ..> UC3 : <<include>>
+UC15 ..> UC3 : <<include>>
 
 ' API Gateway extends
 UC10 ..> UC11 : <<extend>>

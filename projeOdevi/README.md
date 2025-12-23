@@ -11,6 +11,9 @@ JWT authentication, API Gateway ve Kubernetes deployment içeren mikroservis mim
 - MySQL 8.0
 - Docker & Kubernetes
 - Eureka Service Discovery
+- Prometheus (metrics)
+- Grafana (dashboards)
+- Loki + Promtail (logs)
 
 ---
 
@@ -24,6 +27,7 @@ projeOdevi/
 ├── user-service/       # User CRUD (Port: 8082)
 ├── k8s/                # Kubernetes manifests
 ├── docs/               # UML diyagramları
+├── observability/      # Prometheus/Grafana/Loki/Promtail config + dashboards
 └── docker-compose.yml  # Lokal development
 ```
 
@@ -40,17 +44,21 @@ projeOdevi/
 ### 1. Lokal Çalıştırma (Docker Compose)
 
 ```bash
-# Proje dizinine git
-cd c:\Users\T3kn0\Desktop\projeOdevi
+# Proje kök dizininde (projeOdevi/) çalıştır
 
-# Tüm servisleri build et
-docker-compose build
-
-# Servisleri başlat
-docker-compose up -d
+# Servisleri build et ve başlat
+docker compose up -d --build
 
 # Logları izle
-docker-compose logs -f
+docker compose logs -f
+```
+
+### Geliştirme Modu (Hot Reload)
+
+Bu projede `docker compose watch` ile kaynak kod değişikliklerinde container restart edilerek hızlı geliştirme amaçlanır.
+
+```bash
+docker compose watch
 ```
 
 ### 2. Manuel Çalıştırma
@@ -86,6 +94,7 @@ mvnw spring-boot:run
 | POST | /api/auth/register | Yeni kullanıcı kaydı |
 | POST | /api/auth/login | JWT token al |
 | GET | /api/auth/validate | Token doğrula |
+| GET | /api/auth/me | Token ile oturum bilgisi (Gateway üzerinden) |
 
 ### User Service
 | Method | Endpoint | Açıklama |
@@ -119,6 +128,17 @@ curl -X POST http://localhost:8080/api/auth/login \
 curl -X GET http://localhost:8080/api/users \
   -H "Authorization: Bearer <TOKEN>"
 ```
+
+### 4. /api/auth/me (Auth-service restart sonrası doğrulama)
+
+`auth-service` restart olduktan sonra token ile tekrar doğrulamak için:
+
+```bash
+curl -X GET http://localhost:8080/api/auth/me \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+Beklenen: `200 OK`.
 
 ---
 
@@ -189,6 +209,115 @@ kubectl apply -f k8s/
 | API Gateway | 8080 | http://localhost:8080 |
 | Auth Service | 8081 | http://localhost:8081 |
 | User Service | 8082 | http://localhost:8082 |
+| Prometheus | 9090 | http://localhost:9090 |
+| Grafana | 3001 | http://localhost:3001 |
+| Loki | 3100 | http://localhost:3100 |
+
+Not: Docker Compose bazı servisleri host'ta farklı portlara map edebilir (örn. `auth-service` bazen 50xxx portuna map olur). En doğrusu `docker compose ps` ile bakmaktır.
+
+---
+
+## 🔭 Observability (Metrics + Logs)
+
+Bu proje, Docker Compose ile aşağıdaki observability stack'i ayağa kaldırır:
+
+- Prometheus: Spring Boot Actuator `/actuator/prometheus` endpointlerinden metrik toplar.
+- Grafana: Dashboard ve data source provisioning ile otomatik hazır gelir.
+- Loki: Log depolama.
+- Promtail: Docker container loglarını okuyup Loki'ye gönderir.
+
+### 1) Prometheus
+
+- URL: `http://localhost:9090`
+- Target kontrol: `http://localhost:9090/targets`
+
+### 2) Grafana
+
+- URL: `http://localhost:3001`
+- Kullanıcı: `admin`
+- Şifre: `admin`
+
+#### Dashboard
+
+`Microservices Overview (Spring Boot)` dashboard'u otomatik provision edilir.
+
+- Üst KPI kartları: UP, RPS, p95, CPU, Memory
+- Trend grafikler: RPS/p95/CPU/Heap/Top URI
+- Loglar: Logs/sec ve tail
+
+#### Filtreleme (Service / Instance)
+
+Dashboard değişkenleri:
+
+- `Service`: Prometheus `job` label'ı
+- `Instance`: `instanceName` label'ı
+
+Prometheus scrape config'inde her target'a `instanceName` label'ı eklenmiştir; Grafana'da instance bazlı filtreleme buradan gelir.
+
+### 3) Loki + Promtail (Logs)
+
+- Loki URL: `http://localhost:3100`
+
+Grafana Explore > Loki ile hızlı test:
+
+```logql
+{job="docker"}
+```
+
+### Promtail için kritik not (Windows/Docker Desktop)
+
+Eğer loglar Grafana'da görünmüyorsa en sık sebep Promtail'ın Docker API versiyon uyumsuzluğudur.
+
+Belirti:
+
+```text
+client version 1.42 is too old. Minimum supported API version is 1.44
+```
+
+Çözüm:
+
+1) `docker-compose.yml` içindeki promtail image'ının güncel olduğundan emin ol.
+2) Promtail container'ını yeniden oluştur:
+
+```bash
+docker compose pull promtail
+docker compose up -d --force-recreate promtail
+```
+
+Kontrol:
+
+```bash
+docker compose logs --tail=200 promtail
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Grafana panelleri boş / PromQL parse error
+
+- Grafana panel sorgularında gereksiz escape karakterleri (`\\`) olursa Prometheus `bad_data` döndürebilir.
+- Dashboard query'leri PromQL uyumlu olacak şekilde düzenlenmiştir.
+
+### Loglar gelmiyor
+
+- `promtail` loglarını kontrol et:
+
+```bash
+docker compose logs --tail=200 promtail
+```
+
+- Loki'nin sorgu döndürdüğünü kontrol et (Grafana Explore):
+
+```logql
+{job="docker"}
+```
+
+### Hangi port nereye map oldu?
+
+```bash
+docker compose ps
+```
 
 ---
 
@@ -202,5 +331,9 @@ PlantUML ile görüntülemek için: https://www.plantuml.com/plantuml/uml/
 ---
 
 ## 👤 Geliştirici
+
+Olcay ALKAN
+
+Seyfullah TAŞ
 
 Yazılım Sistem Tasarım Projesi - 2024

@@ -10,51 +10,62 @@ title Spring Boot Mikroservis Mimarisi
 
 actor "Client\n(Web/Mobile)" as client
 
-cloud "Kubernetes Cluster" {
-    
-    rectangle "Ingress Controller" as ingress #lightblue
-    
+cloud "Docker Compose (Local/Dev)" {
+
     package "API Gateway\n:8080" as gateway #orange {
         [Spring Cloud Gateway]
-        [Route Definitions]
         [JWT Validation Filter]
+        [Rate Limiting (in-memory)]
     }
-    
-    package "Service Discovery" as eureka #lightgreen {
-        [Eureka Server\n:8761]
+
+    package "Service Discovery\n:8761" as eureka #lightgreen {
+        [Eureka Server]
     }
-    
+
     package "Auth Service\n:8081" as auth #lightyellow {
         [AuthController]
-        [AuthService]
         [JwtUtil]
-        [SecurityConfig]
+        [Actuator / Prometheus]
     }
-    
+
     package "User Service\n:8082" as user #lightpink {
         [UserController]
-        [UserService]
-        [UserRepository]
+        [Actuator / Prometheus]
     }
-    
-    database "MySQL\nDatabase" as mysql #lightgray {
+
+    database "MySQL\n:3306" as mysql #lightgray {
         [authdb]
         [userdb]
     }
+
+    package "Observability" as obs #aliceblue {
+        [Prometheus\n:9090] as prom
+        [Grafana\n:3001] as graf
+        [Loki\n:3100] as loki
+        [Promtail] as promtail
+    }
 }
 
-client --> ingress : HTTPS
-ingress --> gateway : HTTP
+client --> gateway : HTTPS/HTTP
 
 gateway --> auth : /api/auth/**
 gateway --> user : /api/users/**
 
 auth ..> eureka : Register
 user ..> eureka : Register
-gateway ..> eureka : Discover Services
+gateway ..> eureka : Discover services
 
 auth --> mysql : JPA/Hibernate
 user --> mysql : JPA/Hibernate
+
+prom --> gateway : scrape /actuator/prometheus
+prom --> auth : scrape /actuator/prometheus
+prom --> user : scrape /actuator/prometheus
+prom --> eureka : scrape /actuator/prometheus
+
+promtail --> loki : push logs
+graf --> prom : metrics queries
+graf --> loki : logs queries
 
 note right of gateway
   **API Gateway Özellikleri:**
@@ -69,6 +80,7 @@ note right of auth
   - POST /api/auth/register
   - POST /api/auth/login
   - GET /api/auth/validate
+  - GET /api/auth/me
 end note
 
 note right of user
