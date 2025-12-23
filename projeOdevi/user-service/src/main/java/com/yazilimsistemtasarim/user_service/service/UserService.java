@@ -31,6 +31,13 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
     }
 
+    // Internal: update role (source of truth: auth-service)
+    public UserProfile updateRoleByUsername(String username, String role) {
+        UserProfile user = getUserByUsername(username);
+        user.setRole(role);
+        return userRepository.save(user);
+    }
+
     // POST - Create new user
     public UserProfile createUser(UserProfileDTO dto) {
         if (userRepository.existsByUsername(dto.getUsername())) {
@@ -43,6 +50,7 @@ public class UserService {
         UserProfile user = new UserProfile();
         user.setUsername(dto.getUsername());
         user.setEmail(dto.getEmail());
+        user.setRole(dto.getRole() == null || dto.getRole().isBlank() ? "USER" : dto.getRole());
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
         user.setPhone(dto.getPhone());
@@ -79,5 +87,11 @@ public class UserService {
             throw new RuntimeException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    public void deleteByUsername(String username) {
+        UserProfile user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        userRepository.delete(user);
     }
 }

@@ -7,7 +7,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: authdb
     ports:
-      - "3306:3306"
+      - "3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -18,28 +18,100 @@ services:
       timeout: 5s
       retries: 5
 
+  # Observability - Prometheus
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - microservice-network
+
+  # Observability - Loki (Logs)
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: loki
+    command:
+      - "-config.file=/etc/loki/loki.yml"
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+    ports:
+      - "3100:3100"
+    networks:
+      - microservice-network
+
+  # Observability - Grafana
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+      - loki
+    networks:
+      - microservice-network
+
+  # Observability - Promtail (ship docker logs -> Loki)
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    command:
+      - "-config.file=/etc/promtail/promtail.yml"
+    volumes:
+      - ./observability/promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+    networks:
+      - microservice-network
+
   # Eureka Server
   eureka-server:
     build: ./eureka-server
     container_name: eureka-server
     ports:
-      - "8761:8761"
+      - "8761"
     networks:
       - microservice-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # API Gateway
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: ./api-gateway
+      target: dev
     container_name: api-gateway
     ports:
       - "8080:8080"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./api-gateway/src
+          target: /app/src
+        - action: rebuild
+          path: ./api-gateway/pom.xml
+        - action: rebuild
+          path: ./api-gateway/Dockerfile
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
+      - JWT_SECRET=yazilimsistemtasarim2024secretkeythisisasupersecretkey123456789
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -48,15 +120,32 @@ services:
 
   # Auth Service
   auth-service:
-    build: ./auth-service
+    build:
+      context: ./auth-service
+      target: dev
     container_name: auth-service
     ports:
-      - "8081:8081"
+      - "8081"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./auth-service/src
+          target: /app/src
+        - action: rebuild
+          path: ./auth-service/pom.xml
+        - action: rebuild
+          path: ./auth-service/Dockerfile
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/authdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=yazilimsistemtasarim2024secretkeythisisasupersecretkey123456789
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
+      - USER_SERVICE_BASE_URL=http://user-service:8082
+      - ADMIN_SEED_USERNAME=admin
+      - ADMIN_SEED_PASSWORD=admin
+      - ADMIN_SEED_EMAIL=admin@admin.local
     depends_on:
       mysql:
         condition: service_healthy
@@ -67,15 +156,27 @@ services:
 
   # User Service
   user-service:
-    build: ./user-service
+    build:
+      context: ./user-service
+      target: dev
     container_name: user-service
     ports:
-      - "8082:8082"
+      - "8082"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./user-service/src
+          target: /app/src
+        - action: rebuild
+          path: ./user-service/pom.xml
+        - action: rebuild
+          path: ./user-service/Dockerfile
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/userdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
     depends_on:
       mysql:
         condition: service_healthy

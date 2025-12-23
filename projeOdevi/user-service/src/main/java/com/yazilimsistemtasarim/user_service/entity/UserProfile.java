@@ -28,6 +28,9 @@ public class UserProfile {
     @Email(message = "Email should be valid")
     @Column(unique = true, nullable = false)
     private String email;
+
+    @Column(nullable = false)
+    private String role;
     
     private String firstName;
     
@@ -45,6 +48,9 @@ public class UserProfile {
     
     @PrePersist
     protected void onCreate() {
+        if (role == null || role.isBlank()) {
+            role = "USER";
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
