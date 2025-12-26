@@ -1,0 +1,62 @@
+🔐 Auth Service API (/api/auth)
+Method	Endpoint	Açıklama	Yetki
+POST	/api/auth/register	Yeni kullanıcı kaydı	Public
+POST	/api/auth/login	Kullanıcı girişi, JWT token al	Public
+GET	/api/auth/validate	Token doğrulama	Bearer Token
+GET	/api/auth/me	Mevcut kullanıcı bilgisi	Bearer Token
+GET	/api/auth/health	Health check	Public
+POST	/api/auth/users	Admin kullanıcı oluştur	Admin
+PATCH	/api/auth/users/{username}/role	Kullanıcı rolü güncelle	Admin
+DELETE	/api/auth/users/{username}	Kullanıcı sil	Admin
+
+👥 User Service API (/api/users)
+Method	Endpoint	Açıklama	Yetki
+GET	/api/users	Tüm kullanıcıları listele	Admin
+GET	/api/users/me	Kendi profilini getir	Bearer Token
+GET	/api/users/{id}	ID ile kullanıcı getir	Admin / Kendisi
+GET	/api/users/username/{username}	Username ile kullanıcı getir	Admin / Kendisi
+POST	/api/users	Yeni kullanıcı profili oluştur	Internal
+PUT	/api/users/{id}	Kullanıcı profili güncelle (tam)	Admin / Kendisi
+DELETE	/api/users/{id}	Kullanıcı sil	Admin
+DELETE	/api/users/username/{username}	Username ile sil	Internal
+PATCH	/api/users/username/{username}/role	Rol sync	Internal
+GET	/api/users/health	Health check	Public
+
+📝 Request/Response Örnekleri
+Login
+json
+POST /api/auth/login
+{
+  "username": "admin",
+  "password": "admin123"
+}
+Response:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "username": "admin",
+  "roles": ["ROLE_ADMIN"]
+}
+Register
+json
+POST /api/auth/register
+{
+  "username": "user1",
+  "password": "password123",
+  "email": "user1@example.com"
+}
+Update User Profile
+json
+PUT /api/users/{id}
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "phone": "555-1234",
+  "address": "Istanbul, Turkey"
+}
+Update Role
+json
+PATCH /api/auth/users/{username}/role
+{
+  "role": "ADMIN"
+}

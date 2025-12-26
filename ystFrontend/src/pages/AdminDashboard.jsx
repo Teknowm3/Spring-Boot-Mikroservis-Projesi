@@ -439,10 +439,12 @@ const AdminDashboard = () => {
                                     <input
                                         type="password"
                                         required
+                                        minLength={6}
                                         className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         value={currentUser.password}
                                         onChange={(e) => setCurrentUser({ ...currentUser, password: e.target.value })}
                                     />
+                                    <p className="mt-1 text-xs text-gray-500">Şifre en az 6 karakter olmalıdır.</p>
                                 </div>
                             )}
                             {isEditing && (
