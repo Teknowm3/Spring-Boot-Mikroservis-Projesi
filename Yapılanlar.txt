@@ -1,0 +1,28 @@
+📋 Bugün Yaptıklarımız
+1. 🚀 Projeyi Çalıştırdık
+Docker Compose ile tüm microservices'leri yeniden build ettik
+Backend (8 container) ve Frontend (Vite) başarıyla çalıştı
+2. 🔧 CORS ve Frontend Sorunlarını Çözdük
+.env
+ dosyasını localhost:8080 olarak düzelttik (teknokentmeeting.com → localhost)
+API Gateway CORS ayarlarına localhost:5173 ekledik
+3. 📝 REST API Best Practice
+PUT vs PATCH tartışması yaptık
+updateUser
+ → PUT (tam güncelleme)
+updateUserRole
+ → PATCH (kısmi güncelleme)
+Backend ve frontend'i buna göre güncelledik
+4. 🔐 Şifre Validasyonu
+Kullanıcı ekleme formuna min 6 karakter validasyonu ekledik
+Uyarı mesajı: "Şifre en az 6 karakter olmalıdır"
+5. 📚 Dokümantasyon
+REST API.txt - Tüm endpoint'ler listelendi
+YST_Microservices_API.postman_collection.json
+ - Postman collection oluşturduk
+6. ☸️ Kubernetes Deployment (Local)
+Docker Desktop Kubernetes aktif edildi
+Tüm servisler K8s'e deploy edildi (7 pod)
+auth-deployment.yaml
+'a admin seed env'leri eklendi
+Login başarıyla test edildi! ✅
