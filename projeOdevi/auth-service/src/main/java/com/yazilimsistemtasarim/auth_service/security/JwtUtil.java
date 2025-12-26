@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 @Component
@@ -51,16 +52,6 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername());
-    }
-
-    public String generateToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
-    }
-
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         if (role != null && !role.isBlank()) {
@@ -80,8 +71,16 @@ public class JwtUtil {
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        if (token == null || userDetails == null) {
+            return false;
+        }
+
+        try {
+            final String username = extractUsername(token);
+            return (Objects.equals(username, userDetails.getUsername()) && !isTokenExpired(token));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Boolean validateToken(String token) {
