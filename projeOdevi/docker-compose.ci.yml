@@ -1,0 +1,78 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: authdb
+    ports:
+      - "3306:3306"
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  eureka-server:
+    build: ./eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - microservice-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      target: dev
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
+      - JWT_SECRET=yazilimsistemtasarim2024secretkeythisisasupersecretkey123456789
+    depends_on:
+      - eureka-server
+    networks:
+      - microservice-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      target: dev
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/authdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - JWT_SECRET=yazilimsistemtasarim2024secretkeythisisasupersecretkey123456789
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
+      - USER_SERVICE_BASE_URL=http://user-service:8082
+      - ADMIN_SEED_USERNAME=admin
+      - ADMIN_SEED_PASSWORD=admin
+      - ADMIN_SEED_EMAIL=admin@admin.local
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - microservice-network
+
+  user-service:
+    build:
+      context: ./user-service
+      target: dev
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/userdb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - INTERNAL_SIGNATURE_SECRET=W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - microservice-network
+
+networks:
+  microservice-network:
+    driver: bridge
