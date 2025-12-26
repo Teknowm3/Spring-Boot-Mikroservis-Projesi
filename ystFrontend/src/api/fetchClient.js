@@ -37,15 +37,29 @@ export const fetchWithAuth = async (endpoint, options = {}) => {
         if (!response.ok) {
             // Try to parse error message
             let errorMessage = 'Something went wrong';
+            const contentType = response.headers.get("content-type") || '';
             try {
                 // Read text once to avoid "body stream already read" error
                 const errorText = await response.text();
-                try {
-                    const errorData = JSON.parse(errorText);
-                    errorMessage = errorData.message || errorMessage;
-                } catch {
-                    // Not a JSON response, use the text directly
-                    errorMessage = errorText || errorMessage;
+                const trimmedText = (errorText || '').trim();
+                const looksLikeHtml = contentType.indexOf('text/html') !== -1 ||
+                    trimmedText.toLowerCase().startsWith('<!doctype') ||
+                    trimmedText.toLowerCase().startsWith('<html');
+
+                if (response.status >= 500 || looksLikeHtml) {
+                    errorMessage = 'Sistem arızası. Lütfen daha sonra tekrar deneyiniz.';
+                } else {
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch {
+                        // Not a JSON response, use the text directly
+                        errorMessage = trimmedText || errorMessage;
+                    }
+                }
+
+                if (typeof errorMessage === 'string' && errorMessage.length > 300) {
+                    errorMessage = errorMessage.slice(0, 300);
                 }
             } catch (e) {
                 // Failed to read text (network error etc)

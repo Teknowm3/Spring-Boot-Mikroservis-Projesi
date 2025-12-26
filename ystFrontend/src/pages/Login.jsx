@@ -7,36 +7,44 @@ import toast from 'react-hot-toast';
 const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (isSubmitting) {
+            return;
+        }
+
         if (!username.trim() || !password.trim()) {
-            toast.error('Lütfen kullanıcı adı ve şofrenizi giriniz.');
+            toast.error('Lütfen kullanıcı adı ve şofrenizi giriniz.', { id: 'login-validation' });
             return;
         }
 
         try {
+            setIsSubmitting(true);
             const success = await login(username, password);
             // With the change in AuthProvider, login now throws on failure.
             // But if it returns true (or valid data), we proceed. 
             // Wait, assuming login returns true on success as per previous code.
             if (success) {
-                toast.success('Giriş başarılı!');
+                toast.success('Giriş başarılı!', { id: 'login-success' });
                 navigate('/dashboard');
             }
         } catch (error) {
             console.error("Login caught error:", error);
             // Force Turkish messages for known status codes to avoid backend English messages
             if (error.status === 429) {
-                toast.error('Çok fazla başarısız giriş denemesi. Lütfen bir süre bekleyiniz.');
+                toast.error('Çok fazla başarısız giriş denemesi. Lütfen bir süre bekleyiniz.', { id: 'login-error' });
             } else if (error.status === 401) {
-                toast.error('Kullanıcı adı veya şifre hatalı.');
+                toast.error('Kullanıcı adı veya şifre hatalı.', { id: 'login-error' });
             } else {
-                toast.error(error.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+                toast.error(error.message || 'Giriş başarısız. Lütfen bilgilerinizi kontrol edin.', { id: 'login-error' });
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -84,7 +92,8 @@ const Login = () => {
 
                     <button
                         type="submit"
-                        className="w-full bg-white text-indigo-600 font-bold py-3 px-4 rounded-lg hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition flex items-center justify-center gap-2 group"
+                        disabled={isSubmitting}
+                        className="w-full bg-white text-indigo-600 font-bold py-3 px-4 rounded-lg hover:bg-white/90 disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition flex items-center justify-center gap-2 group"
                     >
                         Giriş Yap
                         <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition" />
