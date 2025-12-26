@@ -86,8 +86,8 @@ public class AuthController {
         ));
     }
 
-    // PUT /api/auth/users/{username}/role - Update role (admin only)
-    @PutMapping("/users/{username}/role")
+    // PATCH /api/auth/users/{username}/role - Update role (admin only)
+    @PatchMapping("/users/{username}/role")
     public ResponseEntity<?> updateRole(@PathVariable String username, @RequestBody Map<String, String> body, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));

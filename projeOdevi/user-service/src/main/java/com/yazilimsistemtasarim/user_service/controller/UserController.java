@@ -140,7 +140,7 @@ public class UserController {
         }
     }
 
-    // PUT /api/users/{id} - Kullanıcı güncelle
+    // PUT /api/users/{id} - Kullanıcı güncelle (tam güncelleme)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody UserProfileDTO dto, HttpServletRequest request) {
         try {
@@ -201,8 +201,8 @@ public class UserController {
         }
     }
 
-    // PUT /api/users/username/{username}/role - Internal role sync from auth-service
-    @PutMapping("/username/{username}/role")
+    // PATCH /api/users/username/{username}/role - Internal role sync from auth-service
+    @PatchMapping("/username/{username}/role")
     public ResponseEntity<?> syncRole(@PathVariable String username, @RequestBody Map<String, String> body, HttpServletRequest request) {
         String caller = currentUsername(request);
         if (caller == null || caller.isBlank() || !caller.equals("auth-service")) {

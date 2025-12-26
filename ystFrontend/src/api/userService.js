@@ -35,7 +35,7 @@ export const updateUser = async (id, user) => {
 
 export const updateUserRole = async (username, role) => {
     return await fetchWithAuth(`/auth/users/${username}/role`, {
-        method: 'PUT',
+        method: 'PATCH',
         body: JSON.stringify({ role: role })
     });
 };

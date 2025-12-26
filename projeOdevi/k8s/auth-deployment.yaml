@@ -31,6 +31,18 @@ spec:
                   key: mysql-root-password
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: "http://eureka-server:8761/eureka/"
+            - name: JWT_SECRET
+              value: "yazilimsistemtasarim2024secretkeythisisasupersecretkey123456789"
+            - name: ADMIN_SEED_USERNAME
+              value: "admin"
+            - name: ADMIN_SEED_PASSWORD
+              value: "admin"
+            - name: ADMIN_SEED_EMAIL
+              value: "admin@admin.local"
+            - name: INTERNAL_SIGNATURE_SECRET
+              value: "W8fXc2qA9tRk7nV4pL1sD6mZ0yH3uJ5bQ2eG7xN9cK4vS1aT"
+            - name: USER_SERVICE_BASE_URL
+              value: "http://user-service:8082"
           resources:
             requests:
               memory: "256Mi"
