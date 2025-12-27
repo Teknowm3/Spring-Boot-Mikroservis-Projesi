@@ -88,6 +88,16 @@ jobs:
           ssh k8s-worker-3 "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-3 "rm /tmp/*.tar.gz"
           
+          # Worker-3: Frontend
+          echo "Building and sending Frontend to k8s-worker-3..."
+          cd ../ystFrontend
+          sudo docker build -t frontend:latest .
+          sudo docker save frontend:latest | gzip > /tmp/frontend.tar.gz
+          scp /tmp/frontend.tar.gz k8s-worker-3:/tmp/
+          ssh k8s-worker-3 "gunzip -c /tmp/frontend.tar.gz | sudo ctr -n k8s.io images import -"
+          ssh k8s-worker-3 "rm /tmp/frontend.tar.gz"
+          cd ../projeOdevi
+          
           # Cleanup
           rm -f /tmp/*.tar.gz
 
@@ -121,6 +131,7 @@ jobs:
           kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
           kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
           kubectl apply -f projeOdevi/k8s/user-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
 
       - name: Check Deployment Status
         run: |
