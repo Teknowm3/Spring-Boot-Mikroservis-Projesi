@@ -83,13 +83,17 @@ jobs:
         run: kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
 
       - name: Wait for MySQL
-        run: kubectl wait --for=condition=ready pod -l app=mysql -n mikroservis --timeout=180s
+        run: |
+          sleep 10
+          kubectl rollout status deployment/mysql -n mikroservis --timeout=80s
 
       - name: Deploy Eureka
         run: kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
 
       - name: Wait for Eureka
-        run: kubectl wait --for=condition=ready pod -l app=eureka-server -n mikroservis --timeout=180s
+        run: |
+          sleep 10
+          kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
       - name: Deploy Services
         run: |
