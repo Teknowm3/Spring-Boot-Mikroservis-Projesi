@@ -70,6 +70,26 @@ jobs:
           sudo docker build -t auth-service:latest ./auth-service
           sudo docker build -t user-service:latest ./user-service
 
+      - name: Distribute Images to Workers
+        run: |
+          # Save images
+          sudo docker save eureka-server:latest | gzip > /tmp/eureka.tar.gz
+          sudo docker save api-gateway:latest | gzip > /tmp/gateway.tar.gz
+          sudo docker save auth-service:latest | gzip > /tmp/auth.tar.gz
+          sudo docker save user-service:latest | gzip > /tmp/user.tar.gz
+          
+          # Copy and load to each worker
+          for worker in k8s-worker-1 k8s-worker-2 k8s-worker-3; do
+            echo "Loading images to $worker..."
+            scp /tmp/*.tar.gz $worker:/tmp/
+            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/eureka.tar.gz)"
+            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/gateway.tar.gz)"
+            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/auth.tar.gz)"
+            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/user.tar.gz)"
+            ssh $worker "rm /tmp/*.tar.gz"
+          done
+          rm /tmp/*.tar.gz
+
       - name: Create Namespace
         run: kubectl apply -f projeOdevi/k8s/namespace.yaml || true
 
