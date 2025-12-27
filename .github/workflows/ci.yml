@@ -62,79 +62,116 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Distribute Images to Workers
+      # ============================================
+      # WORKER-1: MySQL (Database Node)
+      # ============================================
+      - name: "Worker-1: MySQL is using official image"
+        run: echo "MySQL uses official mysql:8.0 image, no build needed"
+
+      # ============================================
+      # WORKER-2: Eureka + Auth Service
+      # ============================================
+      - name: "Worker-2: Build Eureka Server"
         run: |
           cd projeOdevi
-          
-          # Worker-2: Eureka + Auth
-          echo "Building and sending to k8s-worker-2 (Eureka + Auth)..."
           sudo docker build -t eureka-server:latest ./eureka-server
+
+      - name: "Worker-2: Build Auth Service"
+        run: |
+          cd projeOdevi
           sudo docker build -t auth-service:latest ./auth-service
+
+      - name: "Worker-2: Send Images"
+        run: |
           sudo docker save eureka-server:latest | gzip > /tmp/eureka.tar.gz
           sudo docker save auth-service:latest | gzip > /tmp/auth.tar.gz
           scp /tmp/eureka.tar.gz /tmp/auth.tar.gz k8s-worker-2:/tmp/
           ssh k8s-worker-2 "gunzip -c /tmp/eureka.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-2 "gunzip -c /tmp/auth.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-2 "rm /tmp/*.tar.gz"
-          
-          # Worker-3: Gateway + User
-          echo "Building and sending to k8s-worker-3 (Gateway + User)..."
+          rm -f /tmp/eureka.tar.gz /tmp/auth.tar.gz
+
+      # ============================================
+      # WORKER-3: API Gateway + User Service
+      # ============================================
+      - name: "Worker-3: Build API Gateway"
+        run: |
+          cd projeOdevi
           sudo docker build -t api-gateway:latest ./api-gateway
+
+      - name: "Worker-3: Build User Service"
+        run: |
+          cd projeOdevi
           sudo docker build -t user-service:latest ./user-service
+
+      - name: "Worker-3: Send Backend Images"
+        run: |
           sudo docker save api-gateway:latest | gzip > /tmp/gateway.tar.gz
           sudo docker save user-service:latest | gzip > /tmp/user.tar.gz
           scp /tmp/gateway.tar.gz /tmp/user.tar.gz k8s-worker-3:/tmp/
           ssh k8s-worker-3 "gunzip -c /tmp/gateway.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-3 "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-3 "rm /tmp/*.tar.gz"
-          
-          # Worker-3: Frontend
-          echo "Building and sending Frontend to k8s-worker-3..."
-          cd ../ystFrontend
+          rm -f /tmp/gateway.tar.gz /tmp/user.tar.gz
+
+      # ============================================
+      # FRONTEND: React App (Worker-3)
+      # ============================================
+      - name: "Frontend: Build React App"
+        run: |
+          cd ystFrontend
           sudo docker build -t frontend:latest .
+
+      - name: "Frontend: Send to Worker-3"
+        run: |
           sudo docker save frontend:latest | gzip > /tmp/frontend.tar.gz
           scp /tmp/frontend.tar.gz k8s-worker-3:/tmp/
           ssh k8s-worker-3 "gunzip -c /tmp/frontend.tar.gz | sudo ctr -n k8s.io images import -"
           ssh k8s-worker-3 "rm /tmp/frontend.tar.gz"
-          cd ../projeOdevi
-          
-          # Cleanup
-          rm -f /tmp/*.tar.gz
+          rm -f /tmp/frontend.tar.gz
 
-      - name: Create Namespace
+      # ============================================
+      # KUBERNETES: Deploy All Services
+      # ============================================
+      - name: "K8s: Create Namespace"
         run: kubectl apply -f projeOdevi/k8s/namespace.yaml || true
 
-      - name: Create Secrets
+      - name: "K8s: Create Secrets"
         run: |
           kubectl create secret generic mysql-secret \
             --from-literal=mysql-root-password=root \
             -n mikroservis --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy MySQL
+      - name: "K8s: Deploy MySQL"
         run: kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
 
-      - name: Wait for MySQL
+      - name: "K8s: Wait for MySQL"
         run: |
           sleep 10
           kubectl rollout status deployment/mysql -n mikroservis --timeout=80s
 
-      - name: Deploy Eureka
+      - name: "K8s: Deploy Eureka Server"
         run: kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
 
-      - name: Wait for Eureka
+      - name: "K8s: Wait for Eureka"
         run: |
           sleep 10
           kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
-      - name: Deploy Services
+      - name: "K8s: Deploy Backend Services"
         run: |
           kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
           kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
           kubectl apply -f projeOdevi/k8s/user-deployment.yaml
-          kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
 
-      - name: Check Deployment Status
+      - name: "K8s: Deploy Frontend"
+        run: kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
+
+      - name: "K8s: Verify Deployment"
         run: |
           sleep 30
+          echo "=== PODS ==="
           kubectl get pods -n mikroservis
+          echo ""
+          echo "=== SERVICES ==="
           kubectl get svc -n mikroservis
