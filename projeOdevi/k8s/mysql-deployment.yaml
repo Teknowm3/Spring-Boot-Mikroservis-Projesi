@@ -8,18 +8,6 @@ data:
     CREATE DATABASE IF NOT EXISTS authdb;
     CREATE DATABASE IF NOT EXISTS userdb;
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-  namespace: mikroservis
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,8 +48,7 @@ spec:
               cpu: "500m"
       volumes:
         - name: mysql-storage
-          persistentVolumeClaim:
-            claimName: mysql-pvc
+          emptyDir: {}
         - name: mysql-initdb
           configMap:
             name: mysql-initdb
