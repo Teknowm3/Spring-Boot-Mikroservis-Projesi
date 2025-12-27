@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,13 +7,15 @@ on:
       - master
       - develop
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  # Build and compile each service
+  build:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -45,69 +47,58 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x mvnw
 
-      - name: Build & Test
+      - name: Build
         env:
           MAVEN_OPTS: -Dstyle.color=always
         run: ./mvnw -B -ntp clean package -DskipTests
 
-  docker-compose-smoke:
-    runs-on: ubuntu-latest
+  # Deploy to Kubernetes (only on self-hosted runner)
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build & start stack (Docker Compose)
-        run: docker compose -f projeOdevi/docker-compose.yml up -d --build
-
-      - name: Smoke test (health endpoints)
-        shell: bash
+      - name: Build Docker Images
         run: |
-          set -euo pipefail
-          EUREKA_PORT="$(docker compose -f projeOdevi/docker-compose.yml port eureka-server 8761 | awk -F: '{print $2}')"
-          for i in {1..60}; do
-            if curl -fsS "http://localhost:${EUREKA_PORT}/actuator/health" >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
-          curl -fsS "http://localhost:${EUREKA_PORT}/actuator/health"
+          cd projeOdevi
+          sudo docker build -t eureka-server:latest ./eureka-server
+          sudo docker build -t api-gateway:latest ./api-gateway
+          sudo docker build -t auth-service:latest ./auth-service
+          sudo docker build -t user-service:latest ./user-service
 
-          for i in {1..60}; do
-            if curl -fsS http://localhost:8080/actuator/health >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
-          curl -fsS http://localhost:8080/actuator/health
+      - name: Create Namespace
+        run: kubectl apply -f projeOdevi/k8s/namespace.yaml || true
 
-          for i in {1..60}; do
-            if curl -fsS http://localhost:9090/-/ready >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
-          curl -fsS http://localhost:9090/-/ready
+      - name: Create Secrets
+        run: |
+          kubectl create secret generic mysql-secret \
+            --from-literal=mysql-root-password=root \
+            -n mikroservis --dry-run=client -o yaml | kubectl apply -f -
 
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3100/ready >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
-          curl -fsS http://localhost:3100/ready
+      - name: Deploy MySQL
+        run: kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
 
-          for i in {1..60}; do
-            if curl -fsS http://localhost:3001/api/health >/dev/null 2>&1; then
-              break
-            fi
-            sleep 2
-          done
-          curl -fsS http://localhost:3001/api/health
+      - name: Wait for MySQL
+        run: kubectl wait --for=condition=ready pod -l app=mysql -n mikroservis --timeout=180s
 
-      - name: Docker Compose logs (on failure)
-        if: failure()
-        run: docker compose -f projeOdevi/docker-compose.yml logs --no-color
+      - name: Deploy Eureka
+        run: kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
 
-      - name: Tear down
-        if: always()
-        run: docker compose -f projeOdevi/docker-compose.yml down -v
+      - name: Wait for Eureka
+        run: kubectl wait --for=condition=ready pod -l app=eureka-server -n mikroservis --timeout=180s
+
+      - name: Deploy Services
+        run: |
+          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/user-deployment.yaml
+
+      - name: Check Deployment Status
+        run: |
+          sleep 30
+          kubectl get pods -n mikroservis
+          kubectl get svc -n mikroservis
