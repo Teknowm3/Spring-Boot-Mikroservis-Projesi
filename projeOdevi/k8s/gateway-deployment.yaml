@@ -13,6 +13,8 @@ spec:
       labels:
         app: api-gateway
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-worker-3
       containers:
         - name: api-gateway
           image: api-gateway:latest

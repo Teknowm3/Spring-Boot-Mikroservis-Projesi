@@ -4,7 +4,7 @@ metadata:
   name: auth-service
   namespace: mikroservis
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: auth-service
@@ -13,6 +13,8 @@ spec:
       labels:
         app: auth-service
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-worker-2
       containers:
         - name: auth-service
           image: auth-service:latest

@@ -62,33 +62,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build Docker Images
-        run: |
-          cd projeOdevi
-          sudo docker build -t eureka-server:latest ./eureka-server
-          sudo docker build -t api-gateway:latest ./api-gateway
-          sudo docker build -t auth-service:latest ./auth-service
-          sudo docker build -t user-service:latest ./user-service
-
       - name: Distribute Images to Workers
         run: |
-          # Save images
-          sudo docker save eureka-server:latest | gzip > /tmp/eureka.tar.gz
-          sudo docker save api-gateway:latest | gzip > /tmp/gateway.tar.gz
-          sudo docker save auth-service:latest | gzip > /tmp/auth.tar.gz
-          sudo docker save user-service:latest | gzip > /tmp/user.tar.gz
+          cd projeOdevi
           
-          # Copy and load to each worker
-          for worker in k8s-worker-1 k8s-worker-2 k8s-worker-3; do
-            echo "Loading images to $worker..."
-            scp /tmp/*.tar.gz $worker:/tmp/
-            ssh $worker "gunzip -c /tmp/eureka.tar.gz | sudo ctr -n k8s.io images import -"
-            ssh $worker "gunzip -c /tmp/gateway.tar.gz | sudo ctr -n k8s.io images import -"
-            ssh $worker "gunzip -c /tmp/auth.tar.gz | sudo ctr -n k8s.io images import -"
-            ssh $worker "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
-            ssh $worker "rm /tmp/*.tar.gz"
-          done
-          rm /tmp/*.tar.gz
+          # Worker-2: Eureka + Auth
+          echo "Building and sending to k8s-worker-2 (Eureka + Auth)..."
+          sudo docker build -t eureka-server:latest ./eureka-server
+          sudo docker build -t auth-service:latest ./auth-service
+          sudo docker save eureka-server:latest | gzip > /tmp/eureka.tar.gz
+          sudo docker save auth-service:latest | gzip > /tmp/auth.tar.gz
+          scp /tmp/eureka.tar.gz /tmp/auth.tar.gz k8s-worker-2:/tmp/
+          ssh k8s-worker-2 "gunzip -c /tmp/eureka.tar.gz | sudo ctr -n k8s.io images import -"
+          ssh k8s-worker-2 "gunzip -c /tmp/auth.tar.gz | sudo ctr -n k8s.io images import -"
+          ssh k8s-worker-2 "rm /tmp/*.tar.gz"
+          
+          # Worker-3: Gateway + User
+          echo "Building and sending to k8s-worker-3 (Gateway + User)..."
+          sudo docker build -t api-gateway:latest ./api-gateway
+          sudo docker build -t user-service:latest ./user-service
+          sudo docker save api-gateway:latest | gzip > /tmp/gateway.tar.gz
+          sudo docker save user-service:latest | gzip > /tmp/user.tar.gz
+          scp /tmp/gateway.tar.gz /tmp/user.tar.gz k8s-worker-3:/tmp/
+          ssh k8s-worker-3 "gunzip -c /tmp/gateway.tar.gz | sudo ctr -n k8s.io images import -"
+          ssh k8s-worker-3 "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
+          ssh k8s-worker-3 "rm /tmp/*.tar.gz"
+          
+          # Cleanup
+          rm -f /tmp/*.tar.gz
 
       - name: Create Namespace
         run: kubectl apply -f projeOdevi/k8s/namespace.yaml || true

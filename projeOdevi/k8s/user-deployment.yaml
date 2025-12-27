@@ -4,7 +4,7 @@ metadata:
   name: user-service
   namespace: mikroservis
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: user-service
@@ -13,6 +13,8 @@ spec:
       labels:
         app: user-service
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-worker-3
       containers:
         - name: user-service
           image: user-service:latest
