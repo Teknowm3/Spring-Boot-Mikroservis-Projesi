@@ -1,0 +1,58 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Manuel tetikleme
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker Images
+        run: |
+          cd projeOdevi
+          docker build -t eureka-server:latest ./eureka-server
+          docker build -t api-gateway:latest ./api-gateway
+          docker build -t auth-service:latest ./auth-service
+          docker build -t user-service:latest ./user-service
+
+      - name: Create Namespace
+        run: |
+          kubectl apply -f projeOdevi/k8s/namespace.yaml || true
+
+      - name: Create Secrets
+        run: |
+          kubectl create secret generic mysql-secret \
+            --from-literal=mysql-root-password=root \
+            -n mikroservis --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy MySQL
+        run: kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
+
+      - name: Wait for MySQL
+        run: |
+          kubectl wait --for=condition=ready pod -l app=mysql -n mikroservis --timeout=120s
+
+      - name: Deploy Eureka
+        run: kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
+
+      - name: Wait for Eureka
+        run: |
+          kubectl wait --for=condition=ready pod -l app=eureka-server -n mikroservis --timeout=120s
+
+      - name: Deploy Services
+        run: |
+          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/user-deployment.yaml
+
+      - name: Check Deployment Status
+        run: |
+          kubectl get pods -n mikroservis
+          kubectl get svc -n mikroservis
