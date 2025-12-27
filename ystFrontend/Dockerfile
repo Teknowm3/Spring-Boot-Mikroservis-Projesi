@@ -12,10 +12,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the app with production API URL
-# ARG VITE_API_BASE_URL=http://api-gateway:8080/api
-ARG VITE_API_BASE_URL=/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Build the app - Use relative URL so nginx can proxy
+ENV VITE_API_BASE_URL=/api
 
 RUN npm run build
 
