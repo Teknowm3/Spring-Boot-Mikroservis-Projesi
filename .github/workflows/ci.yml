@@ -82,10 +82,10 @@ jobs:
           for worker in k8s-worker-1 k8s-worker-2 k8s-worker-3; do
             echo "Loading images to $worker..."
             scp /tmp/*.tar.gz $worker:/tmp/
-            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/eureka.tar.gz)"
-            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/gateway.tar.gz)"
-            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/auth.tar.gz)"
-            ssh $worker "sudo ctr -n k8s.io images import <(gunzip -c /tmp/user.tar.gz)"
+            ssh $worker "gunzip -c /tmp/eureka.tar.gz | sudo ctr -n k8s.io images import -"
+            ssh $worker "gunzip -c /tmp/gateway.tar.gz | sudo ctr -n k8s.io images import -"
+            ssh $worker "gunzip -c /tmp/auth.tar.gz | sudo ctr -n k8s.io images import -"
+            ssh $worker "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
             ssh $worker "rm /tmp/*.tar.gz"
           done
           rm /tmp/*.tar.gz
