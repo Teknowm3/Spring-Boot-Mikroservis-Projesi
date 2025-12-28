@@ -218,19 +218,47 @@ data:
           "fieldConfig": { "defaults": { "unit": "megabytes" } }
         },
         {
+          "type": "table",
+          "title": "HTTP Endpoint Requests (Top 20)",
+          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 8 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "topk(20, sum(increase(http_server_requests_seconds_count{job=\"$job\"}[5m])) by (uri, method, status))",
+              "legendFormat": "{{method}} {{uri}} - {{status}}",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": { "align": "auto" }
+            },
+            "overrides": [
+              { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Requests (5m)" }] }
+            ]
+          },
+          "transformations": [
+            { "id": "organize", "options": { "excludeByName": { "Time": true }, "renameByName": { "method": "Method", "uri": "Endpoint", "status": "Status", "Value": "Requests" } } }
+          ]
+        },
+        {
           "type": "logs",
           "title": "Application Logs",
-          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
+          "gridPos": { "x": 0, "y": 26, "w": 24, "h": 10 },
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [
             {
               "refId": "A",
-              "expr": "{namespace=\"mikroservis\", app=\"$app\"}"
+              "expr": "{job=\"mikroservis-logs\"}"
             }
           ],
           "options": {
             "showTime": true,
-            "wrapLogMessage": true
+            "wrapLogMessage": true,
+            "showLabels": true,
+            "showCommonLabels": false
           }
         }
       ]
@@ -262,7 +290,7 @@ spec:
             - name: GF_SECURITY_ADMIN_USER
               value: "admin"
             - name: GF_SECURITY_ADMIN_PASSWORD
-              value: "admin123"
+              value: "admin"
             - name: GF_USERS_ALLOW_SIGN_UP
               value: "false"
           volumeMounts:
