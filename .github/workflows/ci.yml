@@ -390,7 +390,7 @@ jobs:
       - name: 📊 Deploy Prometheus, Loki, Grafana & Kube-State-Metrics
         run: |
           echo "=== 📊 Worker-1: Monitoring Stack ==="
-          kubectl apply -f projeOdevi/k8s/kube-state-metrics.yaml
+          kubectl apply -f projeOdevi/k8s/kube-state-metrics-deployment.yaml
           kubectl apply -f projeOdevi/k8s/prometheus-deployment.yaml
           kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
           kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
