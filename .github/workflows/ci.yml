@@ -20,6 +20,8 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions: write-all
+
 env:
   JAVA_VERSION: '17'
   DOCKER_BUILDKIT: 1
