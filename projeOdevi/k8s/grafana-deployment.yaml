@@ -13,11 +13,13 @@ data:
         url: http://prometheus:9090
         isDefault: true
         editable: true
+        uid: Prometheus
       - name: Loki
         type: loki
         access: proxy
         url: http://loki:3100
         editable: true
+        uid: Loki
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -36,6 +38,203 @@ data:
         updateIntervalSeconds: 10
         options:
           path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: mikroservis
+data:
+  microservices-overview.json: |
+    {
+      "uid": "microservices-overview",
+      "title": "Microservices Overview (Kubernetes)",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "timezone": "browser",
+      "tags": ["spring", "kubernetes", "prometheus"],
+      "time": { "from": "now-15m", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "type": "query",
+            "name": "job",
+            "label": "Service",
+            "datasource": { "type": "prometheus", "uid": "Prometheus" },
+            "query": { "query": "label_values(up, job)", "refId": "StandardVariableQuery" },
+            "refresh": 1,
+            "sort": 1,
+            "current": { "text": "api-gateway", "value": "api-gateway" }
+          },
+          {
+            "type": "query",
+            "name": "app",
+            "label": "App (Loki)",
+            "datasource": { "type": "loki", "uid": "Loki" },
+            "query": { "query": "label_values({namespace=\"mikroservis\"}, app)", "refId": "StandardVariableQuery" },
+            "refresh": 1,
+            "sort": 1
+          }
+        ]
+      },
+      "panels": [
+        {
+          "type": "stat",
+          "title": "UP",
+          "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "up{job=\"$job\"}", "legendFormat": "" }
+          ],
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+            "colorMode": "value"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "type": "stat",
+          "title": "RPS (1m)",
+          "gridPos": { "x": 4, "y": 0, "w": 5, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"$job\"}[1m]))",
+              "legendFormat": ""
+            }
+          ],
+          "fieldConfig": { "defaults": { "decimals": 2 } }
+        },
+        {
+          "type": "stat",
+          "title": "p95 latency (ms)",
+          "gridPos": { "x": 9, "y": 0, "w": 5, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"$job\"}[5m])) by (le)) * 1000",
+              "legendFormat": ""
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms", "decimals": 0 } }
+        },
+        {
+          "type": "stat",
+          "title": "CPU (%)",
+          "gridPos": { "x": 14, "y": 0, "w": 5, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "process_cpu_usage{job=\"$job\"} * 100",
+              "legendFormat": ""
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 } }
+        },
+        {
+          "type": "stat",
+          "title": "Memory (MB)",
+          "gridPos": { "x": 19, "y": 0, "w": 5, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jvm_memory_used_bytes{job=\"$job\"}) / 1024 / 1024",
+              "legendFormat": ""
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "megabytes", "decimals": 0 } }
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP RPS (1m)",
+          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(http_server_requests_seconds_count{job=\"$job\"}[1m]))",
+              "legendFormat": "rps"
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "HTTP p95 latency (ms)",
+          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"$job\"}[5m])) by (le)) * 1000",
+              "legendFormat": "p95"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ms" } }
+        },
+        {
+          "type": "timeseries",
+          "title": "CPU usage (%)",
+          "gridPos": { "x": 0, "y": 11, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "process_cpu_usage{job=\"$job\"} * 100",
+              "legendFormat": "cpu%"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent" } }
+        },
+        {
+          "type": "timeseries",
+          "title": "JVM Heap (MB)",
+          "gridPos": { "x": 12, "y": 11, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(jvm_memory_used_bytes{job=\"$job\", area=\"heap\"}) / 1024 / 1024",
+              "legendFormat": "heap"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "megabytes" } }
+        },
+        {
+          "type": "logs",
+          "title": "Application Logs",
+          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
+          "datasource": { "type": "loki", "uid": "Loki" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "{namespace=\"mikroservis\", app=\"$app\"}"
+            }
+          ],
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true
+          }
+        }
+      ]
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,6 +270,8 @@ spec:
               mountPath: /etc/grafana/provisioning/datasources
             - name: dashboards-provider
               mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
           resources:
             requests:
               memory: "128Mi"
@@ -91,6 +292,9 @@ spec:
         - name: dashboards-provider
           configMap:
             name: grafana-dashboards-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
 ---
 apiVersion: v1
 kind: Service

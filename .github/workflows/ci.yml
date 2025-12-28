@@ -14,7 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Build and compile each service
+  # ============================================
+  # JOB 1: Build & Test (GitHub Hosted)
+  # ============================================
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -52,8 +54,10 @@ jobs:
           MAVEN_OPTS: -Dstyle.color=always
         run: ./mvnw -B -ntp clean package -DskipTests
 
-  # Deploy to Kubernetes (only on self-hosted runner)
-  deploy:
+  # ============================================
+  # JOB 2: Build Docker Images (Self-Hosted)
+  # ============================================
+  build-images:
     runs-on: self-hosted
     needs: build
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -62,131 +66,154 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ============================================
-      # WORKER-1: MySQL (Database Node)
-      # ============================================
-      - name: "Worker-1: MySQL is using official image"
-        run: echo "MySQL uses official mysql:8.0 image, no build needed"
-
-      # ============================================
-      # WORKER-2: Eureka + Auth Service
-      # ============================================
-      - name: "Worker-2: Build Eureka Server"
+      - name: Build All Docker Images
         run: |
-          cd projeOdevi
-          sudo docker build -t eureka-server:latest ./eureka-server
-
-      - name: "Worker-2: Build Auth Service"
-        run: |
-          cd projeOdevi
+          echo "=== Building Eureka Server ==="
+          cd projeOdevi && sudo docker build -t eureka-server:latest ./eureka-server
+          
+          echo "=== Building Auth Service ==="
           sudo docker build -t auth-service:latest ./auth-service
-
-      - name: "Worker-2: Send Images"
-        run: |
-          sudo docker save eureka-server:latest | gzip > /tmp/eureka.tar.gz
-          sudo docker save auth-service:latest | gzip > /tmp/auth.tar.gz
-          scp /tmp/eureka.tar.gz /tmp/auth.tar.gz k8s-worker-2:/tmp/
-          ssh k8s-worker-2 "gunzip -c /tmp/eureka.tar.gz | sudo ctr -n k8s.io images import -"
-          ssh k8s-worker-2 "gunzip -c /tmp/auth.tar.gz | sudo ctr -n k8s.io images import -"
-          ssh k8s-worker-2 "rm /tmp/*.tar.gz"
-          rm -f /tmp/eureka.tar.gz /tmp/auth.tar.gz
-
-      # ============================================
-      # WORKER-3: API Gateway + User Service
-      # ============================================
-      - name: "Worker-3: Build API Gateway"
-        run: |
-          cd projeOdevi
+          
+          echo "=== Building API Gateway ==="
           sudo docker build -t api-gateway:latest ./api-gateway
-
-      - name: "Worker-3: Build User Service"
-        run: |
-          cd projeOdevi
+          
+          echo "=== Building User Service ==="
           sudo docker build -t user-service:latest ./user-service
+          
+          echo "=== Building Frontend ==="
+          cd ../ystFrontend && sudo docker build -t frontend:latest .
 
-      - name: "Worker-3: Send Backend Images"
+  # ============================================
+  # JOB 3: Distribute Images to Workers
+  # ============================================
+  distribute-images:
+    runs-on: self-hosted
+    needs: build-images
+    
+    steps:
+      - name: Send Images to Worker-2 (Eureka, Auth)
         run: |
-          sudo docker save api-gateway:latest | gzip > /tmp/gateway.tar.gz
-          sudo docker save user-service:latest | gzip > /tmp/user.tar.gz
-          scp /tmp/gateway.tar.gz /tmp/user.tar.gz k8s-worker-3:/tmp/
-          ssh k8s-worker-3 "gunzip -c /tmp/gateway.tar.gz | sudo ctr -n k8s.io images import -"
-          ssh k8s-worker-3 "gunzip -c /tmp/user.tar.gz | sudo ctr -n k8s.io images import -"
-          ssh k8s-worker-3 "rm /tmp/*.tar.gz"
-          rm -f /tmp/gateway.tar.gz /tmp/user.tar.gz
+          echo "=== Sending to Worker-2 ==="
+          sudo docker save eureka-server:latest auth-service:latest | gzip > /tmp/worker2-images.tar.gz
+          scp /tmp/worker2-images.tar.gz k8s-worker-2:/tmp/
+          ssh k8s-worker-2 "gunzip -c /tmp/worker2-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker2-images.tar.gz"
+          rm -f /tmp/worker2-images.tar.gz
 
-      # ============================================
-      # FRONTEND: React App (Worker-3)
-      # ============================================
-      - name: "Frontend: Build React App"
+      - name: Send Images to Worker-3 (Gateway, User, Frontend)
         run: |
-          cd ystFrontend
-          sudo docker build -t frontend:latest .
+          echo "=== Sending to Worker-3 ==="
+          sudo docker save api-gateway:latest user-service:latest frontend:latest | gzip > /tmp/worker3-images.tar.gz
+          scp /tmp/worker3-images.tar.gz k8s-worker-3:/tmp/
+          ssh k8s-worker-3 "gunzip -c /tmp/worker3-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker3-images.tar.gz"
+          rm -f /tmp/worker3-images.tar.gz
 
-      - name: "Frontend: Send to Worker-3"
+  # ============================================
+  # JOB 4: Deploy Infrastructure
+  # ============================================
+  deploy-infrastructure:
+    runs-on: self-hosted
+    needs: distribute-images
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Namespace & Secrets
         run: |
-          sudo docker save frontend:latest | gzip > /tmp/frontend.tar.gz
-          scp /tmp/frontend.tar.gz k8s-worker-3:/tmp/
-          ssh k8s-worker-3 "gunzip -c /tmp/frontend.tar.gz | sudo ctr -n k8s.io images import -"
-          ssh k8s-worker-3 "rm /tmp/frontend.tar.gz"
-          rm -f /tmp/frontend.tar.gz
-
-      # ============================================
-      # KUBERNETES: Deploy All Services
-      # ============================================
-      - name: "K8s: Create Namespace"
-        run: kubectl apply -f projeOdevi/k8s/namespace.yaml || true
-
-      - name: "K8s: Create Secrets"
-        run: |
+          kubectl apply -f projeOdevi/k8s/namespace.yaml || true
           kubectl create secret generic mysql-secret \
             --from-literal=mysql-root-password=root \
             -n mikroservis --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: "K8s: Deploy MySQL"
-        run: kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
-
-      - name: "K8s: Wait for MySQL"
+      - name: Deploy MySQL
         run: |
+          kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
           sleep 10
-          kubectl rollout status deployment/mysql -n mikroservis --timeout=80s
+          kubectl rollout status deployment/mysql -n mikroservis --timeout=120s
 
-      - name: "K8s: Deploy Eureka Server"
-        run: kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
-
-      - name: "K8s: Wait for Eureka"
+      - name: Deploy Eureka Server
         run: |
+          kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
           sleep 10
           kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
-      # ============================================
-      # MONITORING STACK (Worker-1)
-      # ============================================
-      - name: "K8s: Deploy Prometheus"
+  # ============================================
+  # JOB 5: Deploy Monitoring Stack
+  # ============================================
+  deploy-monitoring:
+    runs-on: self-hosted
+    needs: deploy-infrastructure
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Prometheus
         run: kubectl apply -f projeOdevi/k8s/prometheus-deployment.yaml
 
-      - name: "K8s: Deploy Loki"
+      - name: Deploy Loki
         run: kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
 
-      - name: "K8s: Deploy Promtail"
+      - name: Deploy Promtail
         run: kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
 
-      - name: "K8s: Deploy Grafana"
+      - name: Deploy Grafana
         run: kubectl apply -f projeOdevi/k8s/grafana-deployment.yaml
 
-      - name: "K8s: Deploy Backend Services"
+      - name: Wait for Monitoring Stack
         run: |
-          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          kubectl rollout status deployment/prometheus -n mikroservis --timeout=120s || true
+          kubectl rollout status deployment/loki -n mikroservis --timeout=120s || true
+          kubectl rollout status deployment/grafana -n mikroservis --timeout=120s || true
+
+  # ============================================
+  # JOB 6: Deploy Application Services
+  # ============================================
+  deploy-services:
+    runs-on: self-hosted
+    needs: deploy-infrastructure
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy Backend Services
+        run: |
           kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
+          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
           kubectl apply -f projeOdevi/k8s/user-deployment.yaml
 
-      - name: "K8s: Deploy Frontend"
+      - name: Deploy Frontend
         run: kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
 
-      - name: "K8s: Verify Deployment"
+      - name: Wait for Services
         run: |
-          sleep 30
+          kubectl rollout status deployment/auth-service -n mikroservis --timeout=180s || true
+          kubectl rollout status deployment/api-gateway -n mikroservis --timeout=180s || true
+          kubectl rollout status deployment/user-service -n mikroservis --timeout=180s || true
+          kubectl rollout status deployment/frontend -n mikroservis --timeout=120s || true
+
+  # ============================================
+  # JOB 7: Verify Deployment
+  # ============================================
+  verify:
+    runs-on: self-hosted
+    needs: [deploy-monitoring, deploy-services]
+    
+    steps:
+      - name: Show Deployment Status
+        run: |
+          echo "========================================"
+          echo "           DEPLOYMENT STATUS            "
+          echo "========================================"
+          echo ""
           echo "=== PODS ==="
-          kubectl get pods -n mikroservis
+          kubectl get pods -n mikroservis -o wide
           echo ""
           echo "=== SERVICES ==="
           kubectl get svc -n mikroservis
+          echo ""
+          echo "=== ENDPOINTS ==="
+          echo "Frontend:  http://<WORKER-3-IP>:30080"
+          echo "Grafana:   http://<WORKER-1-IP>:30300"
+          echo "API Gateway: LoadBalancer pending or NodePort 31720"

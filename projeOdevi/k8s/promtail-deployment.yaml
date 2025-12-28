@@ -13,7 +13,7 @@ data:
       filename: /tmp/positions.yaml
 
     clients:
-      - url: http://loki:3100/loki/api/v1/push
+      - url: http://loki.mikroservis.svc.cluster.local:3100/loki/api/v1/push
 
     scrape_configs:
       - job_name: kubernetes-pods
@@ -23,7 +23,7 @@ data:
               names:
                 - mikroservis
         pipeline_stages:
-          - docker: {}
+          - cri: {}
         relabel_configs:
           - source_labels:
               - __meta_kubernetes_pod_label_app
@@ -37,6 +37,15 @@ data:
           - source_labels:
               - __meta_kubernetes_pod_node_name
             target_label: node
+          - source_labels:
+              - __meta_kubernetes_pod_container_name
+            target_label: container
+          - source_labels:
+              - __meta_kubernetes_pod_uid
+              - __meta_kubernetes_pod_container_name
+            target_label: __path__
+            separator: /
+            replacement: /var/log/pods/*$1/*.log
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -58,14 +67,19 @@ spec:
           image: grafana/promtail:2.9.0
           args:
             - -config.file=/etc/promtail/promtail-config.yaml
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           volumeMounts:
             - name: config
               mountPath: /etc/promtail
             - name: varlog
               mountPath: /var/log
               readOnly: true
-            - name: varlibdockercontainers
-              mountPath: /var/lib/docker/containers
+            - name: pods
+              mountPath: /var/log/pods
               readOnly: true
           resources:
             requests:
@@ -81,9 +95,9 @@ spec:
         - name: varlog
           hostPath:
             path: /var/log
-        - name: varlibdockercontainers
+        - name: pods
           hostPath:
-            path: /var/lib/docker/containers
+            path: /var/log/pods
 ---
 apiVersion: v1
 kind: ServiceAccount
