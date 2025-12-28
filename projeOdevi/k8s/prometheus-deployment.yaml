@@ -56,7 +56,7 @@ data:
 
       - job_name: 'kube-state-metrics'
         static_configs:
-          - targets: ['kube-state-metrics:8080']
+          - targets: ['kube-state-metrics:9100']
 ---
 apiVersion: apps/v1
 kind: Deployment
