@@ -57,6 +57,10 @@ data:
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
             target_label: __address__
+
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics:9100']
 ---
 apiVersion: apps/v1
 kind: Deployment
