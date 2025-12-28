@@ -603,36 +603,50 @@ GitHub Actions otomatik olarak tüm deployment sürecini yönetir.
 
 ## 6.4 Test Senaryoları
 
-### Senaryo 1: Kullanıcı Kaydı
+### Senaryo 1: Kullanıcı Kaydı ve Login
 1. Frontend'e git (http://<IP>:30080)
-2. "Register" sayfasına git
-3. Kullanıcı bilgilerini gir
+2. "Login" sayfasından sistem girişi yap veya "Register" sayfasına git
+3. Kullanıcı bilgilerini gir (username, email, password)
 4. "Kayıt Ol" butonuna tıkla
-5. Otomatik login ve dashboard'a yönlendirme
+5. Otomatik login ve rolüne göre dashboard'a yönlendirme
 
 **Login Sayfası:**
 
 ![Login Page](./diagrams/frontend-login.png)
 
+*JWT token tabanlı kimlik doğrulama. Başarılı login sonrası token localStorage'a kaydedilir ve tüm API isteklerinde Authorization header'da gönderilir.*
+
 **Register Sayfası:**
 
 ![Register Page](./diagrams/frontend-reigter-with-admin.png)
+
+*Kullanıcı kaydı sırasında **role-based authentication** uygulanır. Normal kullanıcılar USER rolü ile kaydedilir. Admin kullanıcıları oluşturmak için admin panelinden ADMIN rolü atanması gerekir. Roller `authdb.users` tablosunda `role` kolonu (ENUM: USER, ADMIN) olarak saklanır. BCrypt ile hash'lenen şifreler aynı tabloda güvenli bir şekilde tutulur.*
 
 **Kullanıcı Dashboard:**
 
 ![User Dashboard](./diagrams/frontend-user-panel.png)
 
-### Senaryo 2: Admin Login ve Kullanıcı Yönetimi
-1. admin/admin ile giriş yap
+*USER rolüne sahip kullanıcıların gördüğü panel. Kendi profil bilgilerini görüntüleyebilir ve güncelleyebilir.*
+
+### Senaryo 2: Admin Paneli ve Kullanıcı Yönetimi
+1. admin/admin ile giriş yap (default admin kullanıcısı)
 2. Admin paneline git
-3. Kullanıcıları listele
-4. Bir kullanıcının rolünü değiştir
-5. Kullanıcı ara
+3. Tüm kullanıcıları listele ve ara
+4. Kullanıcı rolünü değiştir (USER ↔ ADMIN)
+5. Kullanıcı profil bilgilerini güncelle
 6. Kullanıcı sil
 
-**Admin Paneli - Kullanıcı Listesi:**
+**Admin Paneli - Kullanıcı Yönetimi:**
 
 ![Admin Panel](./diagrams/frontend-admin-panel.png)
+
+*ADMIN rolüne sahip kullanıcılara özel panel. **Role-based access control (RBAC)** ile korumalıdır. Sadece ADMIN rolündeki kullanıcılar bu panele erişebilir. Admin'ler:*
+- *Tüm kullanıcıları görüntüleyebilir (`GET /api/users` - JWT token'da ADMIN rolü kontrolü)*
+- *Kullanıcı rolü değiştirebilir (`PATCH /api/auth/users/{username}/role` - Database'de `authdb.users.role` güncellenir)*
+- *Kullanıcı silebilir (`DELETE /api/users/username/{username}` - Hem `authdb` hem `userdb`'den silinir)*
+- *Kullanıcı arama yapabilir (username veya email ile filtreleme)*
+
+*Veritabanı yapısı: `authdb.users` tablosu kimlik doğrulama bilgilerini (username, password_hash, role), `userdb.users` tablosu ek profil bilgilerini (firstName, lastName, email) saklar. İki veritabanı arasında username ile ilişki kurulur.*
 
 ### Senaryo 3: Monitoring
 1. Grafana'ya git (http://<IP>:30300)
@@ -694,25 +708,29 @@ Proje, gerçek dünya senaryolarına uygun, production-ready bir mikroservis uyg
 
 # EKLER
 
-## Ek-1: UML Diyagramları
+## Ek-1: UML Diyagramları ve Teknik Detaylar
 
-Tüm UML diyagramları `/docs/` ve `/diagrams/` klasörlerinde bulunmaktadır:
+Tüm UML diyagramları ve teknik görseller `/diagrams/` klasöründe bulunmaktadır.
 
-### Sistem Mimarisi Diyagramı
-![Sistem Mimarisi](./diagrams/architecture_diagram.png)
+### PlantUML Kaynak Dosyaları (`/docs/` klasörü)
+- `architecture.puml` - Detaylı sistem mimarisi (Component Diagram)
+- `use-case.puml` - Detaylı kullanıcı senaryoları (Use Case Diagram)
 
-### Use Case Diyagramı
-![Use Case Diagram](./diagrams/use_case_diagram.png)
+### Teknik Mimari Detayları
 
-### Kubernetes Cluster Yapısı
-![Kubernetes Cluster](./diagrams/kubernetes_cluster.png)
+**Role-Based Authentication Akışı:**
+```
+1. Kullanıcı Register/Login yapar
+2. Auth Service JWT token üretir (payload: username, role, email)
+3. Token frontend'e döner ve localStorage'a kaydedilir
+4. Her API isteğinde token Bearer header'da gönderilir
+5. API Gateway token'ı doğrular ve rol kontrolü yapar
+6. Rol yeterliyse istek ilgili mikroservise yönlendirilir
+```
 
-### CI/CD Pipeline
-![CI/CD Pipeline](./diagrams/cicd_pipeline.png)
-
-**Diğer PlantUML Diyagramları** (`/docs/` klasöründe):
-- architecture.puml - Detaylı Component Diyagramı
-- use-case.puml - Detaylı Use Case Diyagramı
+**Database Schema:**
+- `authdb.users`: username (PK), password_hash, email, role (USER/ADMIN)
+- `userdb.users`: username (PK), firstName, lastName, email, createdAt
 
 ## Ek-2: API Endpoint Listesi
 
