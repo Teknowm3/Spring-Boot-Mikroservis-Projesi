@@ -6,239 +6,546 @@ on:
       - main
       - master
       - develop
+    paths:
+      - 'projeOdevi/**'
+      - 'ystFrontend/**'
+      - '.github/workflows/**'
   pull_request:
+    paths:
+      - 'projeOdevi/**'
+      - 'ystFrontend/**'
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  JAVA_VERSION: '17'
+  DOCKER_BUILDKIT: 1
+
 jobs:
-  # ============================================
-  # JOB 1: Build & Test (GitHub Hosted - Parallel)
-  # ============================================
-  build:
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 1: BUILD & TEST (GitHub Hosted - Parallel Matrix)       ║
+  # ╚════════════════════════════════════════════════════════════════╝
+  
+  build-eureka:
+    name: 🏗️ Build Eureka Server
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        service:
-          - eureka-server
-          - api-gateway
-          - auth-service
-          - user-service
-
-    defaults:
-      run:
-        working-directory: projeOdevi/${{ matrix.service }}
-
+    timeout-minutes: 10
+    outputs:
+      artifact-name: eureka-server-jar
+    
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: ☕ Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-          cache-dependency-path: |
-            projeOdevi/${{ matrix.service }}/pom.xml
-            projeOdevi/${{ matrix.service }}/.mvn/wrapper/maven-wrapper.properties
+          cache-dependency-path: projeOdevi/eureka-server/pom.xml
 
-      - name: Make mvnw executable
-        run: chmod +x mvnw
+      - name: 🔨 Build Eureka Server
+        working-directory: projeOdevi/eureka-server
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean package -DskipTests
 
-      - name: Build
-        env:
-          MAVEN_OPTS: -Dstyle.color=always
-        run: ./mvnw -B -ntp clean package -DskipTests
+      - name: 📦 Upload JAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eureka-server-jar
+          path: projeOdevi/eureka-server/target/*.jar
+          retention-days: 1
 
-  # ============================================
-  # JOB 2: Build Docker Images (Self-Hosted)
-  # ============================================
-  build-images:
+  build-api-gateway:
+    name: 🏗️ Build API Gateway
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      artifact-name: api-gateway-jar
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          cache-dependency-path: projeOdevi/api-gateway/pom.xml
+
+      - name: 🔨 Build API Gateway
+        working-directory: projeOdevi/api-gateway
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean package -DskipTests
+
+      - name: 📦 Upload JAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-gateway-jar
+          path: projeOdevi/api-gateway/target/*.jar
+          retention-days: 1
+
+  build-auth-service:
+    name: 🏗️ Build Auth Service
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      artifact-name: auth-service-jar
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          cache-dependency-path: projeOdevi/auth-service/pom.xml
+
+      - name: 🔨 Build Auth Service
+        working-directory: projeOdevi/auth-service
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean package -DskipTests
+
+      - name: 📦 Upload JAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-service-jar
+          path: projeOdevi/auth-service/target/*.jar
+          retention-days: 1
+
+  build-user-service:
+    name: 🏗️ Build User Service
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      artifact-name: user-service-jar
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+          cache-dependency-path: projeOdevi/user-service/pom.xml
+
+      - name: 🔨 Build User Service
+        working-directory: projeOdevi/user-service
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp clean package -DskipTests
+
+      - name: 📦 Upload JAR Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-service-jar
+          path: projeOdevi/user-service/target/*.jar
+          retention-days: 1
+
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 2: DOCKER BUILD (Self-Hosted - Parallel Jobs)           ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
+  docker-eureka:
+    name: 🐳 Docker Eureka Server
     runs-on: self-hosted
-    needs: build
+    needs: build-eureka
+    timeout-minutes: 15
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Build All Docker Images (Parallel)
-        run: |
-          cd projeOdevi
-          
-          # Build images in parallel using background jobs
-          sudo docker build -t eureka-server:latest ./eureka-server &
-          sudo docker build -t auth-service:latest ./auth-service &
-          sudo docker build -t api-gateway:latest ./api-gateway &
-          sudo docker build -t user-service:latest ./user-service &
-          
-          # Wait for all builds to complete
-          wait
-          
-          # Build frontend
-          cd ../ystFrontend
-          sudo docker build -t frontend:latest .
+      - name: 📦 Download JAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: eureka-server-jar
+          path: projeOdevi/eureka-server/target/
 
-  # ============================================
-  # JOB 3a: Send Images to Worker-2 (Parallel)
-  # ============================================
-  distribute-worker-2:
+      - name: 🐳 Build Docker Image
+        run: |
+          cd projeOdevi/eureka-server
+          sudo docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t eureka-server:latest \
+            -t eureka-server:${{ github.sha }} .
+          echo "✅ Eureka Server image built"
+
+  docker-api-gateway:
+    name: 🐳 Docker API Gateway
     runs-on: self-hosted
-    needs: build-images
+    needs: build-api-gateway
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     
     steps:
-      - name: Send Images to Worker-2
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Download JAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: api-gateway-jar
+          path: projeOdevi/api-gateway/target/
+
+      - name: 🐳 Build Docker Image
         run: |
-          echo "=== Worker-2: Eureka + Auth ==="
+          cd projeOdevi/api-gateway
+          sudo docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t api-gateway:latest \
+            -t api-gateway:${{ github.sha }} .
+          echo "✅ API Gateway image built"
+
+  docker-auth-service:
+    name: 🐳 Docker Auth Service
+    runs-on: self-hosted
+    needs: build-auth-service
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Download JAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-service-jar
+          path: projeOdevi/auth-service/target/
+
+      - name: 🐳 Build Docker Image
+        run: |
+          cd projeOdevi/auth-service
+          sudo docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t auth-service:latest \
+            -t auth-service:${{ github.sha }} .
+          echo "✅ Auth Service image built"
+
+  docker-user-service:
+    name: 🐳 Docker User Service
+    runs-on: self-hosted
+    needs: build-user-service
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Download JAR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: user-service-jar
+          path: projeOdevi/user-service/target/
+
+      - name: 🐳 Build Docker Image
+        run: |
+          cd projeOdevi/user-service
+          sudo docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t user-service:latest \
+            -t user-service:${{ github.sha }} .
+          echo "✅ User Service image built"
+
+  docker-frontend:
+    name: 🐳 Docker Frontend
+    runs-on: self-hosted
+    needs: [build-eureka]  # Just needs one to start, frontend has no Java deps
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build Docker Image
+        run: |
+          cd ystFrontend
+          sudo docker build --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t frontend:latest \
+            -t frontend:${{ github.sha }} .
+          echo "✅ Frontend image built"
+
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 3: DISTRIBUTE IMAGES (Parallel to Workers)              ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
+  distribute-worker-1:
+    name: 📤 Distribute to Worker-1
+    runs-on: self-hosted
+    needs: [docker-eureka]  # Just needs one docker job to complete to start pulling
+    timeout-minutes: 15
+    
+    steps:
+      - name: 📤 Pull & Send Monitoring Images to Worker-1
+        run: |
+          echo "=== 🚀 Worker-1: Monitoring Stack ==="
+          
+          # Pull monitoring images from Docker Hub
+          sudo docker pull prom/prometheus:latest
+          sudo docker pull grafana/loki:2.9.0
+          sudo docker pull grafana/promtail:2.9.0
+          sudo docker pull grafana/grafana:latest
+          
+          # Save and transfer to Worker-1
+          sudo docker save \
+            prom/prometheus:latest \
+            grafana/loki:2.9.0 \
+            grafana/promtail:2.9.0 \
+            grafana/grafana:latest | gzip > /tmp/worker1-images.tar.gz
+          
+          scp /tmp/worker1-images.tar.gz k8s-worker-1:/tmp/
+          ssh k8s-worker-1 "gunzip -c /tmp/worker1-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker1-images.tar.gz"
+          rm -f /tmp/worker1-images.tar.gz
+          echo "✅ Worker-1 monitoring images ready"
+
+  distribute-worker-2:
+    name: 📤 Distribute to Worker-2
+    runs-on: self-hosted
+    needs: [docker-eureka, docker-auth-service]
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📤 Send Images to Worker-2
+        run: |
+          echo "=== 🚀 Worker-2: Eureka + Auth ==="
           sudo docker save eureka-server:latest auth-service:latest | gzip > /tmp/worker2-images.tar.gz
           scp /tmp/worker2-images.tar.gz k8s-worker-2:/tmp/
           ssh k8s-worker-2 "gunzip -c /tmp/worker2-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker2-images.tar.gz"
           rm -f /tmp/worker2-images.tar.gz
           echo "✅ Worker-2 images ready"
 
-  # ============================================
-  # JOB 3b: Send Images to Worker-3 (Parallel)
-  # ============================================
   distribute-worker-3:
+    name: 📤 Distribute to Worker-3
     runs-on: self-hosted
-    needs: build-images
+    needs: [docker-api-gateway, docker-user-service, docker-frontend]
+    timeout-minutes: 10
     
     steps:
-      - name: Send Images to Worker-3
+      - name: 📤 Send Images to Worker-3
         run: |
-          echo "=== Worker-3: Gateway + User + Frontend ==="
+          echo "=== 🚀 Worker-3: Gateway + User + Frontend ==="
           sudo docker save api-gateway:latest user-service:latest frontend:latest | gzip > /tmp/worker3-images.tar.gz
           scp /tmp/worker3-images.tar.gz k8s-worker-3:/tmp/
           ssh k8s-worker-3 "gunzip -c /tmp/worker3-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker3-images.tar.gz"
           rm -f /tmp/worker3-images.tar.gz
           echo "✅ Worker-3 images ready"
 
-  # ============================================
-  # JOB 4: Deploy Infrastructure (MySQL + Eureka)
-  # ============================================
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 4: DEPLOY INFRASTRUCTURE (Sequential - Dependencies)    ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
   deploy-infrastructure:
+    name: 🏗️ Deploy Infrastructure
     runs-on: self-hosted
-    needs: [distribute-worker-2, distribute-worker-3]
+    needs: [distribute-worker-1, distribute-worker-2, distribute-worker-3]
+    timeout-minutes: 15
     
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Create Namespace & Secrets
+      - name: 🔐 Create Namespace & Secrets
         run: |
           kubectl apply -f projeOdevi/k8s/namespace.yaml || true
           kubectl create secret generic mysql-secret \
             --from-literal=mysql-root-password=root \
             -n mikroservis --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy MySQL
+      - name: 🐬 Deploy MySQL
         run: |
           kubectl apply -f projeOdevi/k8s/mysql-deployment.yaml
-          sleep 10
-          kubectl rollout status deployment/mysql -n mikroservis --timeout=120s
+          echo "⏳ Waiting for MySQL to be ready..."
+          kubectl rollout status deployment/mysql -n mikroservis --timeout=180s
 
-      - name: Deploy Eureka Server
+      - name: 🌐 Deploy Eureka Server
         run: |
           kubectl apply -f projeOdevi/k8s/eureka-deployment.yaml
-          sleep 10
+          echo "⏳ Waiting for Eureka to be ready..."
           kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
-  # ============================================
-  # JOB 5a: Deploy Monitoring (Worker-1) - Parallel
-  # ============================================
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 5: DEPLOY SERVICES (Parallel - All at once)             ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
   deploy-monitoring:
+    name: 📊 Deploy Monitoring Stack
     runs-on: self-hosted
     needs: deploy-infrastructure
+    timeout-minutes: 10
     
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy Monitoring Stack
+      - name: 📊 Deploy Prometheus, Loki, Grafana
         run: |
-          echo "=== Worker-1: Monitoring Stack ==="
+          echo "=== 📊 Worker-1: Monitoring Stack ==="
           kubectl apply -f projeOdevi/k8s/prometheus-deployment.yaml
           kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
           kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
           kubectl apply -f projeOdevi/k8s/grafana-deployment.yaml
 
-      - name: Wait for Monitoring
+      - name: ⏳ Wait for Monitoring
         run: |
           kubectl rollout status deployment/prometheus -n mikroservis --timeout=120s || true
           kubectl rollout status deployment/loki -n mikroservis --timeout=120s || true
           kubectl rollout status deployment/grafana -n mikroservis --timeout=120s || true
-          echo "✅ Monitoring Stack ready on Worker-1"
+          echo "✅ Monitoring Stack ready"
 
-  # ============================================
-  # JOB 5b: Deploy Worker-2 Services - Parallel
-  # ============================================
-  deploy-worker-2-services:
+  deploy-auth-service:
+    name: 🔐 Deploy Auth Service
     runs-on: self-hosted
     needs: deploy-infrastructure
+    timeout-minutes: 10
     
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy Auth Service
+      - name: 🔐 Deploy Auth Service
         run: |
-          echo "=== Worker-2: Auth Service ==="
+          echo "=== 🔐 Worker-2: Auth Service ==="
           kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
-          kubectl rollout status deployment/auth-service -n mikroservis --timeout=180s || true
-          echo "✅ Auth Service ready on Worker-2"
+          kubectl rollout status deployment/auth-service -n mikroservis --timeout=180s
+          echo "✅ Auth Service ready"
 
-  # ============================================
-  # JOB 5c: Deploy Worker-3 Services - Parallel
-  # ============================================
-  deploy-worker-3-services:
+  deploy-user-service:
+    name: 👤 Deploy User Service
     runs-on: self-hosted
     needs: deploy-infrastructure
+    timeout-minutes: 10
     
     steps:
-      - name: Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy Gateway, User & Frontend
+      - name: 👤 Deploy User Service
         run: |
-          echo "=== Worker-3: Gateway + User + Frontend ==="
-          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          echo "=== 👤 Worker-3: User Service ==="
           kubectl apply -f projeOdevi/k8s/user-deployment.yaml
-          kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
-          
-          kubectl rollout status deployment/api-gateway -n mikroservis --timeout=180s || true
-          kubectl rollout status deployment/user-service -n mikroservis --timeout=180s || true
-          kubectl rollout status deployment/frontend -n mikroservis --timeout=120s || true
-          echo "✅ Worker-3 services ready"
+          kubectl rollout status deployment/user-service -n mikroservis --timeout=180s
+          echo "✅ User Service ready"
 
-  # ============================================
-  # JOB 6: Verify Deployment
-  # ============================================
-  verify:
+  deploy-api-gateway:
+    name: 🚪 Deploy API Gateway
     runs-on: self-hosted
-    needs: [deploy-monitoring, deploy-worker-2-services, deploy-worker-3-services]
+    needs: [deploy-auth-service, deploy-user-service]  # Gateway needs backend services
+    timeout-minutes: 10
     
     steps:
-      - name: Show Deployment Status
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🚪 Deploy API Gateway
         run: |
-          echo "╔════════════════════════════════════════╗"
-          echo "║       DEPLOYMENT COMPLETE              ║"
-          echo "╠════════════════════════════════════════╣"
-          echo "║ Worker-1: Prometheus, Loki, Grafana    ║"
-          echo "║ Worker-2: MySQL, Eureka, Auth          ║"
-          echo "║ Worker-3: Gateway, User, Frontend      ║"
-          echo "╚════════════════════════════════════════╝"
+          echo "=== 🚪 Worker-3: API Gateway ==="
+          kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          kubectl rollout status deployment/api-gateway -n mikroservis --timeout=180s
+          echo "✅ API Gateway ready"
+
+  deploy-frontend:
+    name: 🌐 Deploy Frontend
+    runs-on: self-hosted
+    needs: deploy-api-gateway  # Frontend needs Gateway
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🌐 Deploy Frontend
+        run: |
+          echo "=== 🌐 Worker-3: Frontend ==="
+          kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
+          kubectl rollout status deployment/frontend -n mikroservis --timeout=120s
+          echo "✅ Frontend ready"
+
+  # ╔════════════════════════════════════════════════════════════════╗
+  # ║ STAGE 6: VERIFY & SMOKE TEST                                  ║
+  # ╚════════════════════════════════════════════════════════════════╝
+
+  verify:
+    name: ✅ Verify Deployment
+    runs-on: self-hosted
+    needs: [deploy-monitoring, deploy-frontend]
+    timeout-minutes: 5
+    
+    steps:
+      - name: 📋 Show Deployment Status
+        run: |
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║              🎉 DEPLOYMENT COMPLETE 🎉                     ║"
+          echo "╠════════════════════════════════════════════════════════════╣"
+          echo "║ 📊 Worker-1: Prometheus, Loki, Promtail, Grafana           ║"
+          echo "║ 🔐 Worker-2: MySQL, Eureka, Auth Service                   ║"
+          echo "║ 🌐 Worker-3: API Gateway, User Service, Frontend           ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
           echo ""
-          echo "=== PODS ==="
-          kubectl get pods -n mikroservis -o wide
-          echo ""
-          echo "=== SERVICES ==="
+
+      - name: 📦 List All Pods
+        run: |
+          echo "=== 📦 PODS ==="
+          kubectl get pods -n mikroservis -o wide --sort-by='.metadata.name'
+
+      - name: 🔌 List All Services
+        run: |
+          echo "=== 🔌 SERVICES ==="
           kubectl get svc -n mikroservis
+
+      - name: 🏥 Health Check
+        run: |
+          echo "=== 🏥 HEALTH CHECK ==="
+          
+          # Get all node IPs
+          WORKER_1_IP=$(kubectl get nodes -o wide | grep worker-1 | awk '{print $6}' || echo "N/A")
+          WORKER_2_IP=$(kubectl get nodes -o wide | grep worker-2 | awk '{print $6}' || echo "N/A")
+          WORKER_3_IP=$(kubectl get nodes -o wide | grep worker-3 | awk '{print $6}' || echo "N/A")
+          
           echo ""
-          echo "=== ACCESS ENDPOINTS ==="
-          echo "🌐 Frontend:    http://<WORKER-3-IP>:30080"
-          echo "📊 Grafana:     http://<WORKER-1-IP>:30300 (admin/admin123)"
-          echo "🔌 API Gateway: http://<WORKER-3-IP>:31720"
+          echo "=== 🖥️ NODE IPs ==="
+          echo "Worker-1: ${WORKER_1_IP}"
+          echo "Worker-2: ${WORKER_2_IP}"
+          echo "Worker-3: ${WORKER_3_IP}"
+          echo ""
+          echo "=== 🌐 ACCESS ENDPOINTS ==="
+          echo "┌───────────────────────────────────────────────────────────────┐"
+          echo "│ 📊 WORKER-1 (Monitoring)                                      │"
+          echo "│    Grafana:     http://${WORKER_1_IP}:30300                   │"
+          echo "│    Prometheus:  http://${WORKER_1_IP}:30090                   │"
+          echo "├───────────────────────────────────────────────────────────────┤"
+          echo "│ � WORKER-2 (Core Services)                                   │"
+          echo "│    Eureka:      http://${WORKER_2_IP}:31761                   │"
+          echo "│    Auth API:    http://${WORKER_2_IP}:31720/api/auth          │"
+          echo "├───────────────────────────────────────────────────────────────┤"
+          echo "│ 🌐 WORKER-3 (Frontend & Gateway)                              │"
+          echo "│    Frontend:    http://${WORKER_3_IP}:30080                   │"
+          echo "│    API Gateway: http://${WORKER_3_IP}:31720                   │"
+          echo "└───────────────────────────────────────────────────────────────┘"
+          echo "└─────────────────────────────────────────────────────────┘"
+          echo ""
+          echo "📊 Grafana Credentials: admin / admin123"
+
+      - name: 🧹 Cleanup Artifacts
+        if: always()
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: |
+            eureka-server-jar
+            api-gateway-jar
+            auth-service-jar
+            user-service-jar
