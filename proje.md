@@ -88,7 +88,9 @@ Proje, mikroservis mimarisi kullanılarak tasarlanmıştır. Her servis bağıms
                         └──────────────────┘
 ```
 
-**[EKRAN GÖRÜNTÜSÜ: Sistem Mimarisi Diyagramı]**
+**Sistem Mimarisi Diyagramı:**
+
+![Sistem Mimarisi](./diagrams/architecture_diagram.png)
 
 ## 2.2 Mikroservis Bileşenleri
 
@@ -130,6 +132,7 @@ Proje, mikroservis mimarisi kullanılarak tasarlanmıştır. Her servis bağıms
 - **Loki:** Log aggregation
 - **Promtail:** Log collection agent
 - **Grafana:** Visualization dashboard
+- **Kube-State-Metrics:** Kubernetes cluster metrics
 
 ## 2.3 Kubernetes Cluster Yapısı
 
@@ -138,11 +141,17 @@ Proje, 1 master ve 3 worker node'dan oluşan Kubernetes cluster üzerinde çalı
 |     Node     |      Görev      |              Servisler             |
 |:------------:|:---------------:|:----------------------------------:|
 | k8s-master   | Control Plane   | API Server, Scheduler, Controller  |
-| k8s-worker-1 | Monitoring      | Prometheus, Loki, Grafana          |
+| k8s-worker-1 | Monitoring      | Prometheus, Loki, Grafana, Kube-State-Metrics, Promtail |
 | k8s-worker-2 | Database & Core | MySQL, Eureka, Auth Service        |
 | k8s-worker-3 | Application     | API Gateway, User Service, Frontend|
 
-**[EKRAN GÖRÜNTÜSÜ: kubectl get nodes çıktısı]**
+**Kubernetes Cluster Yapısı:**
+
+![Kubernetes Cluster](./diagrams/kubernetes_cluster.png)
+
+**kubectl get nodes Çıktısı:**
+
+![kubectl get nodes](./diagrams/get_nodes.png)
 
 **[EKRAN GÖRÜNTÜSÜ: kubectl get pods -n mikroservis -o wide çıktısı]**
 
@@ -214,6 +223,7 @@ Proje, 1 master ve 3 worker node'dan oluşan Kubernetes cluster üzerinde çalı
 | Grafana | 10.x | Visualization |
 | Loki | 2.9 | Log aggregation |
 | Promtail | 2.9 | Log collection |
+| Kube-State-Metrics | 2.8.2 | Kubernetes cluster metrics |
 | Micrometer | 1.x | Application metrics |
 
 ## 3.8 Diğer Tool'lar
@@ -284,13 +294,14 @@ Kubernetes üzerinde çalışan resources:
 | Resource Type | Sayı | Açıklama |
 |---------------|------|----------|
 | Namespace | 1 | mikroservis |
-| Deployment | 9 | Tüm servisler |
-| Service | 9 | Network exposure |
+| Deployment | 10 | Tüm servisler (Eureka, Gateway, Auth, User, Frontend, MySQL, Prometheus, Grafana, Loki, Kube-State-Metrics) |
+| Service | 10 | Network exposure |
 | ConfigMap | 4 | Configuration |
 | Secret | 1 | MySQL password |
 | DaemonSet | 1 | Promtail |
-| ServiceAccount | 1 | Promtail RBAC |
-| ClusterRole | 1 | Promtail permissions |
+| ServiceAccount | 2 | Promtail + Kube-State-Metrics RBAC |
+| ClusterRole | 2 | Promtail + Kube-State-Metrics permissions |
+| ClusterRoleBinding | 2 | RBAC bindings |
 
 **[EKRAN GÖRÜNTÜSÜ: kubectl get all -n mikroservis çıktısı]**
 
@@ -305,6 +316,10 @@ GitHub Actions ile otomatik deployment süreci:
 5. **Deploy Services:** Auth, User, Gateway, Frontend (paralel)
 6. **Deploy Monitoring:** Prometheus, Loki, Grafana (paralel)
 7. **Verify:** Deployment doğrulama
+
+**CI/CD Pipeline Akışı:**
+
+![CI/CD Pipeline](./diagrams/cicd_pipeline.png)
 
 **[EKRAN GÖRÜNTÜSÜ: GitHub Actions workflow çalışma görüntüsü]**
 
@@ -322,12 +337,28 @@ GitHub Actions ile otomatik deployment süreci:
 - JVM heap kullanımı
 - HTTP endpoint tablosu
 
+**Grafana Dashboard - Services Metrics & Logs:**
+
+![Grafana Services](./diagrams/grafana-services-metricslogs.png)
+
+**Grafana Dashboard - JVM & HTTP Metrics:**
+
+![JVM and HTTP Metrics](./diagrams/services-jwm-and-http.png)
+
+**Grafana Dashboard - Kubernetes Metrics:**
+
+![Grafana Kubernetes](./diagrams/grafana-kube.png)
+
+**Grafana Dashboard - Node Mapping:**
+
+![Grafana Node Mapping](./diagrams/grafana-node_mapping.png)
+
 ### Loki Logging
 - Tüm pod logları toplanır
 - Label bazlı filtreleme
 - Grafana üzerinden sorgulama
 
-**[EKRAN GÖRÜNTÜSÜ: Grafana dashboard]**
+
 
 ---
 
@@ -653,15 +684,23 @@ Proje, gerçek dünya senaryolarına uygun, production-ready bir mikroservis uyg
 
 ## Ek-1: UML Diyagramları
 
-Tüm UML diyagramları `/docs/` klasöründe bulunmaktadır:
+Tüm UML diyagramları `/docs/` ve `/diagrams/` klasörlerinde bulunmaktadır:
 
-- System Architecture Diagram
-- Use Case Diagram (Kapsamlı)
-- Class Diagram
-- Object Diagram
-- Sequence Diagrams (5 adet)
-- State Diagrams (4 adet)
-- CI/CD Pipeline Diagram
+### Sistem Mimarisi Diyagramı
+![Sistem Mimarisi](./diagrams/architecture_diagram.png)
+
+### Use Case Diyagramı
+![Use Case Diagram](./diagrams/use_case_diagram.png)
+
+### Kubernetes Cluster Yapısı
+![Kubernetes Cluster](./diagrams/kubernetes_cluster.png)
+
+### CI/CD Pipeline
+![CI/CD Pipeline](./diagrams/cicd_pipeline.png)
+
+**Diğer PlantUML Diyagramları** (`/docs/` klasöründe):
+- architecture.puml - Detaylı Component Diyagramı
+- use-case.puml - Detaylı Use Case Diyagramı
 
 ## Ek-2: API Endpoint Listesi
 
@@ -690,6 +729,7 @@ Tüm UML diyagramları `/docs/` klasöründe bulunmaktadır:
 | User Service | 8082 | - | ClusterIP |
 | Prometheus | 9090 | - | ClusterIP |
 | Loki | 3100 | - | ClusterIP |
+| Kube-State-Metrics | 9100 | - | ClusterIP |
 
 ---
 
