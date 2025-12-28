@@ -268,58 +268,111 @@ data:
       "uid": "kubernetes-cluster",
       "title": "Kubernetes Cluster Overview",
       "schemaVersion": 39,
-      "version": 1,
+      "version": 2,
       "refresh": "10s",
       "timezone": "browser",
-      "tags": ["kubernetes", "pods", "cluster"],
+      "tags": ["kubernetes", "nodes", "pods", "cluster"],
       "time": { "from": "now-15m", "to": "now" },
       "annotations": { "list": [] },
       "templating": { "list": [] },
       "panels": [
         {
-          "type": "stat",
-          "title": "Total Services UP",
-          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "count(up == 1)" }],
-          "fieldConfig": {
-            "defaults": {
-              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
-            }
-          }
+          "type": "row",
+          "title": "🖥️ CLUSTER NODES",
+          "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+          "collapsed": false
         },
         {
           "type": "stat",
-          "title": "Services DOWN",
-          "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+          "title": "Total Nodes",
+          "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "count(up == 0) or vector(0)" }],
-          "fieldConfig": {
-            "defaults": {
-              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
-            }
-          }
+          "targets": [{ "refId": "A", "expr": "count(kube_node_info)" }],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } }
         },
         {
           "type": "stat",
-          "title": "Avg CPU Usage (%)",
-          "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+          "title": "Nodes Ready",
+          "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "avg(process_cpu_usage) * 100" }],
-          "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1 } }
+          "targets": [{ "refId": "A", "expr": "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"})" }],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
         },
         {
           "type": "stat",
-          "title": "Total Memory Used (MB)",
-          "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+          "title": "Total Pods Running",
+          "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "sum(jvm_memory_used_bytes) / 1024 / 1024" }],
-          "fieldConfig": { "defaults": { "unit": "megabytes", "decimals": 0 } }
+          "targets": [{ "refId": "A", "expr": "sum(kube_pod_status_phase{namespace=\"mikroservis\", phase=\"Running\"})" }],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } }
+        },
+        {
+          "type": "stat",
+          "title": "Pods Not Ready",
+          "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [{ "refId": "A", "expr": "sum(kube_pod_status_phase{namespace=\"mikroservis\", phase!=\"Running\"}) or vector(0)" }],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } }
         },
         {
           "type": "table",
-          "title": "All Services Status",
-          "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+          "title": "📊 Node Status (Master & Workers)",
+          "gridPos": { "x": 0, "y": 5, "w": 24, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "kube_node_info", "format": "table", "instant": true }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto" } }
+          },
+          "transformations": [
+            { "id": "organize", "options": { "excludeByName": { "Time": true, "Value": true, "__name__": true, "container_runtime_version": true, "kernel_version": true, "os_image": true, "pod_cidr": true, "provider_id": true, "uid": true, "job": true, "instance": true }, "renameByName": { "node": "Node Name", "kubelet_version": "Kubelet Version", "internal_ip": "Internal IP" } } }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "📦 PODS PER NODE",
+          "gridPos": { "x": 0, "y": 11, "w": 24, "h": 1 },
+          "collapsed": false
+        },
+        {
+          "type": "bargauge",
+          "title": "Running Pods per Node",
+          "gridPos": { "x": 0, "y": 12, "w": 24, "h": 6 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [{ "refId": "A", "expr": "sum(kube_pod_info{namespace=\"mikroservis\"}) by (node)", "legendFormat": "{{node}}" }],
+          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } },
+          "options": { "orientation": "horizontal", "displayMode": "gradient" }
+        },
+        {
+          "type": "table",
+          "title": "🗺️ Pod → Node Mapping (Which Service Runs Where)",
+          "gridPos": { "x": 0, "y": 18, "w": 24, "h": 10 },
+          "datasource": { "type": "prometheus", "uid": "Prometheus" },
+          "targets": [
+            { "refId": "A", "expr": "kube_pod_info{namespace=\"mikroservis\"}", "format": "table", "instant": true }
+          ],
+          "fieldConfig": {
+            "defaults": { "custom": { "align": "auto" } }
+          },
+          "transformations": [
+            { "id": "organize", "options": { 
+              "excludeByName": { "Time": true, "Value": true, "__name__": true, "uid": true, "job": true, "instance": true, "pod_ip": true, "host_ip": true, "priority_class": true, "host_network": true }, 
+              "renameByName": { "pod": "Pod Name", "node": "Node", "namespace": "Namespace", "created_by_kind": "Created By", "created_by_name": "Owner" },
+              "indexByName": { "node": 0, "pod": 1, "created_by_name": 2, "namespace": 3 }
+            }}
+          ]
+        },
+        {
+          "type": "row",
+          "title": "📈 SERVICE METRICS",
+          "gridPos": { "x": 0, "y": 28, "w": 24, "h": 1 },
+          "collapsed": false
+        },
+        {
+          "type": "table",
+          "title": "🟢 All Services Status",
+          "gridPos": { "x": 0, "y": 29, "w": 24, "h": 7 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "targets": [
             { "refId": "A", "expr": "up", "format": "table", "instant": true }
@@ -340,7 +393,7 @@ data:
         {
           "type": "bargauge",
           "title": "CPU Usage by Service (%)",
-          "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 36, "w": 12, "h": 7 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "targets": [{ "refId": "A", "expr": "process_cpu_usage * 100", "legendFormat": "{{job}}" }],
           "fieldConfig": { "defaults": { "unit": "percent", "max": 100 } },
@@ -349,7 +402,7 @@ data:
         {
           "type": "bargauge",
           "title": "Memory Usage by Service (MB)",
-          "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+          "gridPos": { "x": 12, "y": 36, "w": 12, "h": 7 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "targets": [{ "refId": "A", "expr": "sum(jvm_memory_used_bytes) by (job) / 1024 / 1024", "legendFormat": "{{job}}" }],
           "fieldConfig": { "defaults": { "unit": "megabytes" } },
@@ -358,7 +411,7 @@ data:
         {
           "type": "timeseries",
           "title": "Service Uptime (seconds)",
-          "gridPos": { "x": 0, "y": 20, "w": 12, "h": 7 },
+          "gridPos": { "x": 0, "y": 43, "w": 12, "h": 7 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "targets": [{ "refId": "A", "expr": "process_uptime_seconds", "legendFormat": "{{job}}" }],
           "fieldConfig": { "defaults": { "unit": "s" } }
@@ -366,29 +419,14 @@ data:
         {
           "type": "timeseries",
           "title": "Global RPS (all services)",
-          "gridPos": { "x": 12, "y": 20, "w": 12, "h": 7 },
+          "gridPos": { "x": 12, "y": 43, "w": 12, "h": 7 },
           "datasource": { "type": "prometheus", "uid": "Prometheus" },
           "targets": [{ "refId": "A", "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (job)", "legendFormat": "{{job}}" }]
         },
         {
-          "type": "timeseries",
-          "title": "JVM Threads by Service",
-          "gridPos": { "x": 0, "y": 27, "w": 12, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "jvm_threads_live_threads", "legendFormat": "{{job}}" }]
-        },
-        {
-          "type": "timeseries",
-          "title": "HTTP Error Rate (5xx)",
-          "gridPos": { "x": 12, "y": 27, "w": 12, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "Prometheus" },
-          "targets": [{ "refId": "A", "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[1m])) by (job)", "legendFormat": "{{job}}" }],
-          "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.1 }] } } }
-        },
-        {
           "type": "logs",
-          "title": "All Microservice Logs",
-          "gridPos": { "x": 0, "y": 34, "w": 24, "h": 10 },
+          "title": "📝 All Microservice Logs",
+          "gridPos": { "x": 0, "y": 50, "w": 24, "h": 8 },
           "datasource": { "type": "loki", "uid": "Loki" },
           "targets": [{ "refId": "A", "expr": "{job=\"mikroservis-logs\"}" }],
           "options": { "showTime": true, "wrapLogMessage": true, "showLabels": true }
