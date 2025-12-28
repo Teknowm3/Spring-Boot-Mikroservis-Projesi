@@ -158,6 +158,21 @@ jobs:
           sleep 10
           kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
+      # ============================================
+      # MONITORING STACK (Worker-1)
+      # ============================================
+      - name: "K8s: Deploy Prometheus"
+        run: kubectl apply -f projeOdevi/k8s/prometheus-deployment.yaml
+
+      - name: "K8s: Deploy Loki"
+        run: kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
+
+      - name: "K8s: Deploy Promtail"
+        run: kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
+
+      - name: "K8s: Deploy Grafana"
+        run: kubectl apply -f projeOdevi/k8s/grafana-deployment.yaml
+
       - name: "K8s: Deploy Backend Services"
         run: |
           kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
