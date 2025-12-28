@@ -387,21 +387,24 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 📊 Deploy Prometheus, Loki, Grafana
+      - name: 📊 Deploy Prometheus, Loki, Grafana & Kube-State-Metrics
         run: |
           echo "=== 📊 Worker-1: Monitoring Stack ==="
+          kubectl apply -f projeOdevi/k8s/kube-state-metrics.yaml
           kubectl apply -f projeOdevi/k8s/prometheus-deployment.yaml
           kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
           kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
           kubectl apply -f projeOdevi/k8s/grafana-deployment.yaml
           
           # Force restart monitoring pods
+          kubectl rollout restart deployment/kube-state-metrics -n mikroservis
           kubectl rollout restart deployment/prometheus -n mikroservis
           kubectl rollout restart deployment/loki -n mikroservis
           kubectl rollout restart deployment/grafana -n mikroservis
 
       - name: ⏳ Wait for Monitoring
         run: |
+          kubectl rollout status deployment/kube-state-metrics -n mikroservis --timeout=120s || true
           kubectl rollout status deployment/prometheus -n mikroservis --timeout=120s || true
           kubectl rollout status deployment/loki -n mikroservis --timeout=120s || true
           kubectl rollout status deployment/grafana -n mikroservis --timeout=120s || true
