@@ -307,21 +307,119 @@ Kubernetes üzerinde çalışan resources:
 
 ## 4.7 CI/CD Pipeline
 
-GitHub Actions ile otomatik deployment süreci:
+GitHub Actions ile tam otomatik deployment pipeline'ı geliştirilmiştir. Pipeline, **self-hosted runner** üzerinde çalışmakta ve her kod değişikliğinde otomatik olarak tüm servisleri build edip Kubernetes cluster'a deploy etmektedir.
 
-1. **Build:** Maven ile tüm servisleri paralel build
-2. **Docker Build:** Docker image'ları oluşturma
-3. **Distribute:** Image'ları worker node'lara gönderme
-4. **Deploy Infrastructure:** MySQL, Eureka
-5. **Deploy Services:** Auth, User, Gateway, Frontend (paralel)
-6. **Deploy Monitoring:** Prometheus, Loki, Grafana (paralel)
-7. **Verify:** Deployment doğrulama
+### Pipeline Mimarisi
 
-**CI/CD Pipeline Akışı:**
+Pipeline 6 ana aşamadan oluşmaktadır:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 1: BUILD & TEST (GitHub-Hosted - Paralel Matrix)         │
+│  • Eureka Server, API Gateway, Auth Service, User Service       │
+│  • Maven build (JDK 17, Temurin)                                │
+│  • JAR artifacts upload                                         │
+├─────────────────────────────────────────────────────────────────┤
+│  STAGE 2: DOCKER BUILD (Self-Hosted - Paralel)                  │
+│  • Download JAR artifacts                                       │
+│  • Build Docker images (latest + commit SHA tags)               │
+│  • Frontend Docker build (React + Nginx)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  STAGE 3: DISTRIBUTE IMAGES (Paralel to Workers)                │
+│  • Worker-1: Pull monitoring images (Prometheus, Grafana, Loki) │
+│  • Worker-2: Transfer Eureka + Auth images                      │
+│  • Worker-3: Transfer Gateway + User + Frontend images          │
+├─────────────────────────────────────────────────────────────────┤
+│  STAGE 4: DEPLOY INFRASTRUCTURE (Sequential)                    │
+│  • Create namespace & secrets                                   │
+│  • Deploy MySQL (wait for ready)                                │
+│  • Deploy Eureka Server (wait for ready)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  STAGE 5: DEPLOY SERVICES (Paralel)                             │
+│  • Monitoring Stack: Prometheus, Loki, Promtail, Grafana        │
+│  • Auth Service (Worker-2)                                      │
+│  • User Service (Worker-3)                                      │
+│  • API Gateway (after Auth & User)                              │
+│  • Frontend (after Gateway)                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  STAGE 6: VERIFY & HEALTH CHECK                                 │
+│  • List all pods & services                                     │
+│  • Display access endpoints                                     │
+│  • Cleanup artifacts                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Aşama Aşama Pipeline Detayları
+
+#### 🏗️ Stage 1: Build & Test
+- **Runner:** GitHub-hosted Ubuntu
+- **Paralel Jobs:** 4 servis aynı anda build edilir
+- **Teknoloji:** Maven Wrapper, JDK 17 (Temurin)
+- **Cache:** Maven dependencies cache'lenir
+- **Çıktı:** JAR artifacts (retention: 1 gün)
+
+#### 🐳 Stage 2: Docker Build
+- **Runner:** Self-hosted (k8s-master)
+- **Paralel Jobs:** 5 image aynı anda build edilir
+- **Features:** 
+  - BuildKit inline cache kullanımı
+  - Dual tagging (`latest` + commit SHA)
+  - Multi-stage builds (frontend için)
+
+#### 📤 Stage 3: Distribute Images
+- **Optimizasyon:** Worker node'lara göre farklı stratejiler
+  - Worker-1: Public images direkt pull (hızlı)
+  - Worker-2/3: Docker save/load + SCP transfer
+- **Paralel Transfer:** Her worker aynı anda yükleme yapar
+- **Format:** Compressed tar.gz (network optimizasyonu)
+
+#### 🏗️ Stage 4: Infrastructure Deployment
+- **Sequential:** MySQL → Eureka (dependency sırası)
+- **Health Checks:** Her deployment için rollout status kontrolü
+- **Secrets:** Kubernetes secret creation (MySQL credentials)
+- **Timeout:** 180 saniye (MySQL/Eureka için)
+
+#### 🚀 Stage 5: Services Deployment
+- **Paralel Deployment:** Monitoring, Auth, User aynı anda
+- **Smart Dependencies:** 
+  - Gateway, Auth & User'dan sonra
+  - Frontend, Gateway'den sonra
+- **Rolling Update:** `kubectl patch` ile deployment SHA annotation
+- **Verification:** Her servis için rollout status kontrolü
+
+#### ✅ Stage 6: Verification
+- **Cluster Status:** Tüm pod ve service'lerin listesi
+- **Health Check:** Node IP'leri ve erişim endpoint'leri
+- **Artifact Cleanup:** Build artifacts otomatik silme
+
+### Trigger Koşulları
+
+Pipeline şu durumlarda çalışır:
+- **Push:** `main`, `master`, `develop` branch'lerine
+- **Paths:** `projeOdevi/**`, `ystFrontend/**`, `.github/workflows/**`
+- **Manual:** `workflow_dispatch` ile manuel tetikleme
+- **Concurrency:** Aynı branch'te birden fazla pipeline çalışmaz
+
+### Key Features
+
+✅ **Paralel Execution:** Build ve deployment işlemlerinin paralel yapılması ile hız  
+✅ **Optimized Transfer:** Worker node'lara image transfer optimizasyonu  
+✅ **Health Checks:** Her aşamada rollout status kontrolü  
+✅ **Smart Dependencies:** Servisler arası dependency yönetimi  
+✅ **Automated Cleanup:** Artifact'ların otomatik temizlenmesi  
+✅ **Multi-Environment:** Self-hosted runner ile GCP Kubernetes entegrasyonu  
+
+### Pipeline Görselleştirme
+
+**CI/CD Pipeline Akış Diyagramı:**
 
 ![CI/CD Pipeline](./diagrams/cicd_pipeline.png)
 
-**[EKRAN GÖRÜNTÜSÜ: GitHub Actions workflow çalışma görüntüsü]**
+**GitHub Actions Workflow Çalışma Görünümü:**
+
+![GitHub Actions Workflow](./diagrams/git-action-viewpipeline.png)
+
+*Pipeline yaklaşık 8-12 dakikada tamamlanır. Paralel execution sayesinde seri execution'a göre %60-70 daha hızlıdır.*
 
 ## 4.8 Observability
 
@@ -586,11 +684,7 @@ git commit -m "Deploy"
 git push
 ```
 
-GitHub Actions otomatik olarak tüm deployment sürecini yönetir.
-
-**GitHub Actions Pipeline Görünümü:**
-
-![GitHub Actions Pipeline](./diagrams/git-action-viewpipeline.png)
+GitHub Actions otomatik olarak tüm deployment sürecini yönetir. Detaylı pipeline akışı için bölüm 4.7'ye bakınız.
 
 ## 6.3 Erişim Noktaları
 
