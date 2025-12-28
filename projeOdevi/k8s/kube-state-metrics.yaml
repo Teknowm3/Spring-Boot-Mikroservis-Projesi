@@ -11,11 +11,18 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
+      - configmaps
+      - secrets
       - nodes
       - pods
       - services
       - endpoints
       - namespaces
+      - resourcequotas
+      - replicationcontrollers
+      - limitranges
+      - persistentvolumeclaims
+      - persistentvolumes
     verbs: ["list", "watch"]
   - apiGroups: ["apps"]
     resources:
@@ -23,6 +30,24 @@ rules:
       - replicasets
       - statefulsets
       - daemonsets
+    verbs: ["list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources:
+      - ingresses
+      - networkpolicies
+    verbs: ["list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
     verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -58,19 +83,34 @@ spec:
         kubernetes.io/hostname: k8s-worker-1
       containers:
         - name: kube-state-metrics
-          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1
+          image: bitnami/kube-state-metrics:2.10.1
+          args:
+            - --port=8080
+            - --telemetry-port=8081
           ports:
             - containerPort: 8080
               name: http-metrics
             - containerPort: 8081
               name: telemetry
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
           resources:
             requests:
               memory: "64Mi"
               cpu: "50m"
             limits:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: "256Mi"
+              cpu: "200m"
 ---
 apiVersion: v1
 kind: Service
