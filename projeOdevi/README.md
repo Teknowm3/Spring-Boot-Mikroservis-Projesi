@@ -169,6 +169,11 @@ kubectl apply -f k8s/eureka-deployment.yaml
 kubectl apply -f k8s/gateway-deployment.yaml
 kubectl apply -f k8s/auth-deployment.yaml
 kubectl apply -f k8s/user-deployment.yaml
+kubectl apply -f k8s/prometheus-deployment.yaml
+kubectl apply -f k8s/kube-state-metrics-deployment.yaml
+kubectl apply -f k8s/grafana-deployment.yaml
+kubectl apply -f k8s/loki-deployment.yaml
+kubectl apply -f k8s/promtail-deployment.yaml
 kubectl apply -f k8s/ingress.yaml
 
 # 5. Pod durumlarını kontrol et
