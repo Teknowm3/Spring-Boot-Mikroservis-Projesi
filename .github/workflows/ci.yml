@@ -394,6 +394,11 @@ jobs:
           kubectl apply -f projeOdevi/k8s/loki-deployment.yaml
           kubectl apply -f projeOdevi/k8s/promtail-deployment.yaml
           kubectl apply -f projeOdevi/k8s/grafana-deployment.yaml
+          
+          # Force restart monitoring pods
+          kubectl rollout restart deployment/prometheus -n mikroservis
+          kubectl rollout restart deployment/loki -n mikroservis
+          kubectl rollout restart deployment/grafana -n mikroservis
 
       - name: ⏳ Wait for Monitoring
         run: |
@@ -416,6 +421,7 @@ jobs:
         run: |
           echo "=== 🔐 Worker-2: Auth Service ==="
           kubectl apply -f projeOdevi/k8s/auth-deployment.yaml
+          kubectl rollout restart deployment/auth-service -n mikroservis
           kubectl rollout status deployment/auth-service -n mikroservis --timeout=180s
           echo "✅ Auth Service ready"
 
@@ -433,6 +439,7 @@ jobs:
         run: |
           echo "=== 👤 Worker-3: User Service ==="
           kubectl apply -f projeOdevi/k8s/user-deployment.yaml
+          kubectl rollout restart deployment/user-service -n mikroservis
           kubectl rollout status deployment/user-service -n mikroservis --timeout=180s
           echo "✅ User Service ready"
 
@@ -450,6 +457,7 @@ jobs:
         run: |
           echo "=== 🚪 Worker-3: API Gateway ==="
           kubectl apply -f projeOdevi/k8s/gateway-deployment.yaml
+          kubectl rollout restart deployment/api-gateway -n mikroservis
           kubectl rollout status deployment/api-gateway -n mikroservis --timeout=180s
           echo "✅ API Gateway ready"
 
@@ -467,6 +475,7 @@ jobs:
         run: |
           echo "=== 🌐 Worker-3: Frontend ==="
           kubectl apply -f projeOdevi/k8s/frontend-deployment.yaml
+          kubectl rollout restart deployment/frontend -n mikroservis
           kubectl rollout status deployment/frontend -n mikroservis --timeout=120s
           echo "✅ Frontend ready"
 
