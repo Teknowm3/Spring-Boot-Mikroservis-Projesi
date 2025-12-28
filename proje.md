@@ -153,7 +153,9 @@ Proje, 1 master ve 3 worker node'dan oluşan Kubernetes cluster üzerinde çalı
 
 ![kubectl get nodes](./diagrams/get_nodes.png)
 
-**[EKRAN GÖRÜNTÜSÜ: kubectl get pods -n mikroservis -o wide çıktısı]**
+**Pods Durumu:**
+
+![kubectl get pods -n mikroservis -o wide](./diagrams/get-pods-wide.png)
 
 ---
 
@@ -251,7 +253,7 @@ Proje, RESTful API prensiplerine uygun olarak tasarlanmıştır. Tüm HTTP metod
 | PATCH       | Kısmi güncelleme (rol değiştirme) |
 | DELETE      | Silme (kullanıcı silme) |
 
-**[EKRAN GÖRÜNTÜSÜ: Postman veya API test çıktısı]**
+
 
 ## 4.2 Token Authentication (JWT)
 
@@ -262,7 +264,7 @@ JWT (JSON Web Token) tabanlı stateless authentication uygulanmıştır:
 - Her API isteğinde token doğrulanır
 - Token süresi 24 saat olarak ayarlanmıştır
 
-**[EKRAN GÖRÜNTÜSÜ: JWT token örneği (decoded)]**
+
 
 ## 4.3 API Gateway
 
@@ -303,7 +305,9 @@ Kubernetes üzerinde çalışan resources:
 | ClusterRole | 2 | Promtail + Kube-State-Metrics permissions |
 | ClusterRoleBinding | 2 | RBAC bindings |
 
-**[EKRAN GÖRÜNTÜSÜ: kubectl get all -n mikroservis çıktısı]**
+**Cluster Resources:**
+
+![kubectl get all -n mikroservis](./diagrams/get-all-mikroservis.png)
 
 ## 4.7 CI/CD Pipeline
 
@@ -528,7 +532,7 @@ Request Body: { "role": "ADMIN" }
 Response: 200 OK
 ```
 
-**[EKRAN GÖRÜNTÜSÜ: API çağrısı ve response örneği]**
+
 
 ## 5.2 JWT Authentication Kullanımı
 
@@ -646,7 +650,7 @@ scrape_configs:
           names: ['mikroservis']
 ```
 
-**[EKRAN GÖRÜNTÜSÜ: Prometheus targets sayfası]**
+
 
 ---
 
@@ -749,8 +753,7 @@ GitHub Actions otomatik olarak tüm deployment sürecini yönetir. Detaylı pipe
 4. Metrikleri incele
 5. Logları görüntüle
 
-**[EKRAN GÖRÜNTÜSÜ: Grafana dashboard - metrics]**
-**[EKRAN GÖRÜNTÜSÜ: Grafana dashboard - logs]**
+
 
 ### Senaryo 4: CI/CD Test
 1. Kod değişikliği yap
@@ -758,8 +761,7 @@ GitHub Actions otomatik olarak tüm deployment sürecini yönetir. Detaylı pipe
 3. GitHub Actions'tan pipeline'ı izle
 4. Deployment durumunu kontrol et
 
-**[EKRAN GÖRÜNTÜSÜ: GitHub Actions pipeline çalışması]**
-**[EKRAN GÖRÜNTÜSÜ: kubectl get pods sonucu]**
+
 
 ## 6.5 Doğrulama Komutları
 
@@ -777,7 +779,7 @@ kubectl logs -n mikroservis -l app=auth-service
 kubectl rollout status deployment/auth-service -n mikroservis
 ```
 
-**[EKRAN GÖRÜNTÜSÜ: Terminal komut çıktıları]**
+
 
 ---
 
