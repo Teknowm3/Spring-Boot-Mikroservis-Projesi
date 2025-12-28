@@ -26,7 +26,7 @@ env:
 
 jobs:
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 1: BUILD & TEST (GitHub Hosted - Parallel Matrix)       ║
+  # ║  STAGE 1: BUILD & TEST (GitHub Hosted - Parallel Matrix)       ║
   # ╚════════════════════════════════════════════════════════════════╝
   
   build-eureka:
@@ -158,7 +158,7 @@ jobs:
           retention-days: 1
 
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 2: DOCKER BUILD (Self-Hosted - Parallel Jobs)           ║
+  # ║  STAGE 2: DOCKER BUILD (Self-Hosted - Parallel Jobs)           ║
   # ╚════════════════════════════════════════════════════════════════╝
 
   docker-eureka:
@@ -281,36 +281,29 @@ jobs:
           echo "✅ Frontend image built"
 
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 3: DISTRIBUTE IMAGES (Parallel to Workers)              ║
+  # ║  STAGE 3: DISTRIBUTE IMAGES (Parallel to Workers)              ║
   # ╚════════════════════════════════════════════════════════════════╝
 
   distribute-worker-1:
     name: 📤 Distribute to Worker-1
     runs-on: self-hosted
-    needs: [docker-eureka]  # Just needs one docker job to complete to start pulling
-    timeout-minutes: 15
+    needs: [docker-eureka]  # Just needs one docker job to complete to start
+    timeout-minutes: 5
     
     steps:
-      - name: 📤 Pull & Send Monitoring Images to Worker-1
+      - name: 📤 Pull Monitoring Images on Worker-1
         run: |
           echo "=== 🚀 Worker-1: Monitoring Stack ==="
           
-          # Pull monitoring images from Docker Hub
-          sudo docker pull prom/prometheus:latest
-          sudo docker pull grafana/loki:2.9.0
-          sudo docker pull grafana/promtail:2.9.0
-          sudo docker pull grafana/grafana:latest
-          
-          # Save and transfer to Worker-1
-          sudo docker save \
-            prom/prometheus:latest \
-            grafana/loki:2.9.0 \
-            grafana/promtail:2.9.0 \
-            grafana/grafana:latest | gzip > /tmp/worker1-images.tar.gz
-          
-          scp /tmp/worker1-images.tar.gz k8s-worker-1:/tmp/
-          ssh k8s-worker-1 "gunzip -c /tmp/worker1-images.tar.gz | sudo ctr -n k8s.io images import - && rm /tmp/worker1-images.tar.gz"
-          rm -f /tmp/worker1-images.tar.gz
+          # Pull images directly on Worker-1 (much faster than transfer)
+          ssh k8s-worker-1 "
+            sudo ctr -n k8s.io images pull docker.io/prom/prometheus:latest &
+            sudo ctr -n k8s.io images pull docker.io/grafana/loki:2.9.0 &
+            sudo ctr -n k8s.io images pull docker.io/grafana/promtail:2.9.0 &
+            sudo ctr -n k8s.io images pull docker.io/grafana/grafana:latest &
+            wait
+            echo '✅ All monitoring images pulled'
+          "
           echo "✅ Worker-1 monitoring images ready"
 
   distribute-worker-2:
@@ -346,7 +339,7 @@ jobs:
           echo "✅ Worker-3 images ready"
 
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 4: DEPLOY INFRASTRUCTURE (Sequential - Dependencies)    ║
+  # ║  STAGE 4: DEPLOY INFRASTRUCTURE (Sequential - Dependencies)    ║
   # ╚════════════════════════════════════════════════════════════════╝
 
   deploy-infrastructure:
@@ -379,7 +372,7 @@ jobs:
           kubectl rollout status deployment/eureka-server -n mikroservis --timeout=180s
 
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 5: DEPLOY SERVICES (Parallel - All at once)             ║
+  # ║  STAGE 5: DEPLOY SERVICES (Parallel - All at once)             ║
   # ╚════════════════════════════════════════════════════════════════╝
 
   deploy-monitoring:
@@ -476,7 +469,7 @@ jobs:
           echo "✅ Frontend ready"
 
   # ╔════════════════════════════════════════════════════════════════╗
-  # ║ STAGE 6: VERIFY & SMOKE TEST                                  ║
+  # ║  STAGE 6: VERIFY & SMOKE TEST                                  ║
   # ╚════════════════════════════════════════════════════════════════╝
 
   verify:
@@ -489,7 +482,7 @@ jobs:
       - name: 📋 Show Deployment Status
         run: |
           echo "╔════════════════════════════════════════════════════════════╗"
-          echo "║              🎉 DEPLOYMENT COMPLETE 🎉                     ║"
+          echo "║               🎉 DEPLOYMENT COMPLETE 🎉                   ║"
           echo "╠════════════════════════════════════════════════════════════╣"
           echo "║ 📊 Worker-1: Prometheus, Loki, Promtail, Grafana           ║"
           echo "║ 🔐 Worker-2: MySQL, Eureka, Auth Service                   ║"
@@ -536,7 +529,6 @@ jobs:
           echo "│    Frontend:    http://${WORKER_3_IP}:30080                   │"
           echo "│    API Gateway: http://${WORKER_3_IP}:31720                   │"
           echo "└───────────────────────────────────────────────────────────────┘"
-          echo "└─────────────────────────────────────────────────────────┘"
           echo ""
           echo "📊 Grafana Credentials: admin / admin123"
 
