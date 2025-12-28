@@ -588,7 +588,9 @@ git push
 
 GitHub Actions otomatik olarak tüm deployment sürecini yönetir.
 
-**[EKRAN GÖRÜNTÜSÜ: GitHub Actions başarılı deployment]**
+**GitHub Actions Pipeline Görünümü:**
+
+![GitHub Actions Pipeline](./diagrams/git-action-viewpipeline.png)
 
 ## 6.3 Erişim Noktaları
 
@@ -608,8 +610,17 @@ GitHub Actions otomatik olarak tüm deployment sürecini yönetir.
 4. "Kayıt Ol" butonuna tıkla
 5. Otomatik login ve dashboard'a yönlendirme
 
-**[EKRAN GÖRÜNTÜSÜ: Register sayfası]**
-**[EKRAN GÖRÜNTÜSÜ: Başarılı kayıt sonrası dashboard]**
+**Login Sayfası:**
+
+![Login Page](./diagrams/frontend-login.png)
+
+**Register Sayfası:**
+
+![Register Page](./diagrams/frontend-reigter-with-admin.png)
+
+**Kullanıcı Dashboard:**
+
+![User Dashboard](./diagrams/frontend-user-panel.png)
 
 ### Senaryo 2: Admin Login ve Kullanıcı Yönetimi
 1. admin/admin ile giriş yap
@@ -619,8 +630,9 @@ GitHub Actions otomatik olarak tüm deployment sürecini yönetir.
 5. Kullanıcı ara
 6. Kullanıcı sil
 
-**[EKRAN GÖRÜNTÜSÜ: Admin paneli - kullanıcı listesi]**
-**[EKRAN GÖRÜNTÜSÜ: Rol değiştirme işlemi]**
+**Admin Paneli - Kullanıcı Listesi:**
+
+![Admin Panel](./diagrams/frontend-admin-panel.png)
 
 ### Senaryo 3: Monitoring
 1. Grafana'ya git (http://<IP>:30300)
