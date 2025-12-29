@@ -1,0 +1,66 @@
+classDiagram
+    class UserProfile {
+        -Long id
+        -String username
+        -String email
+        -String role
+        -String firstName
+        -String lastName
+        -String phone
+        -String address
+        -LocalDateTime createdAt
+        -LocalDateTime updatedAt
+        +onCreate() void
+        +onUpdate() void
+    }
+
+    class UserController {
+        -UserService userService
+        +getAllUsers() ResponseEntity
+        +getUserByUsername(String) ResponseEntity
+        +searchUsers(String) ResponseEntity
+        +updateProfile(String, UserProfileDTO) ResponseEntity
+        +updateRole(String, String) ResponseEntity
+        +deleteUser(String) ResponseEntity
+    }
+
+    class UserService {
+        -UserProfileRepository repository
+        +getAllUsers() List~UserProfile~
+        +getUserByUsername(String) UserProfile
+        +searchByKeyword(String) List~UserProfile~
+        +createProfile(UserProfileDTO) UserProfile
+        +updateProfile(String, UserProfileDTO) UserProfile
+        +updateRole(String, String) void
+        +deleteByUsername(String) void
+    }
+
+    class UserProfileRepository {
+        <<interface>>
+        +findByUsername(String) Optional~UserProfile~
+        +findByEmail(String) Optional~UserProfile~
+        +searchByKeyword(String) List~UserProfile~
+        +deleteByUsername(String) void
+    }
+
+    class UserProfileDTO {
+        -String username
+        -String email
+        -String role
+        -String firstName
+        -String lastName
+        -String phone
+        -String address
+    }
+
+    class InternalSignatureFilter {
+        -String secret
+        +doFilter(Request, Response, Chain) void
+        -validateSignature(String) boolean
+    }
+
+    UserController --> UserService : uses
+    UserService --> UserProfileRepository : uses
+    UserProfileRepository ..> UserProfile : manages
+    UserController ..> UserProfileDTO : receives/returns
+    InternalSignatureFilter --> UserController : protects

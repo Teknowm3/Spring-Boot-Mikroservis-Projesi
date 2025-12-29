@@ -1,0 +1,25 @@
+graph TB
+    subgraph "Auth Service Objects"
+        user1["user1: User<br/>---<br/>id = 1<br/>username = 'admin'<br/>password = '$2a...(hashed)'<br/>email = 'admin@admin.local'<br/>role = ADMIN"]
+        
+        authService1["authService: AuthService<br/>---<br/>userRepository = repo<br/>passwordEncoder = bcrypt<br/>jwtUtil = jwtUtil"]
+        
+        jwtUtil1["jwtUtil: JwtUtil<br/>---<br/>secret = 'yazilim...'<br/>expiration = 86400000"]
+        
+        authResponse1["response: AuthResponse<br/>---<br/>token = 'eyJhbG...'<br/>username = 'admin'<br/>role = 'ADMIN'<br/>message = 'Login successful'"]
+    end
+
+    subgraph "User Service Objects"
+        userProfile1["userProfile1: UserProfile<br/>---<br/>id = 1<br/>username = 'admin'<br/>email = 'admin@admin.local'<br/>role = 'ADMIN'<br/>firstName = null<br/>lastName = null<br/>createdAt = 2025-12-28T15:00:00"]
+    end
+
+    subgraph "API Gateway Objects"
+        jwtFilter["filter: JwtAuthFilter<br/>---<br/>jwtUtil = jwtUtil<br/>validToken = true"]
+        
+        rateLimiter["limiter: RateLimiter<br/>---<br/>maxRequests = 5<br/>windowSeconds = 60<br/>currentCount = 1"]
+    end
+
+    authService1 --> user1
+    authService1 --> jwtUtil1
+    authService1 --> authResponse1
+    jwtFilter --> jwtUtil1

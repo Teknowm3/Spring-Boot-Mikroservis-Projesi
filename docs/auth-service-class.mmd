@@ -1,0 +1,91 @@
+classDiagram
+    class User {
+        -Long id
+        -String username
+        -String password
+        -String email
+        -Role role
+        +getId() Long
+        +getUsername() String
+        +getPassword() String
+        +getEmail() String
+        +getRole() Role
+        +setRole(Role role) void
+    }
+
+    class Role {
+        <<enumeration>>
+        USER
+        ADMIN
+    }
+
+    class AuthController {
+        -AuthService authService
+        +login(LoginRequest) ResponseEntity
+        +register(RegisterRequest) ResponseEntity
+        +changeRole(String, String) ResponseEntity
+        +getCurrentUser() ResponseEntity
+    }
+
+    class AuthService {
+        -UserRepository userRepository
+        -PasswordEncoder passwordEncoder
+        -JwtUtil jwtUtil
+        -UserServiceClient userServiceClient
+        +login(LoginRequest) AuthResponse
+        +register(RegisterRequest) AuthResponse
+        +changeUserRole(String, Role) void
+        +findByUsername(String) User
+    }
+
+    class UserRepository {
+        <<interface>>
+        +findByUsername(String) Optional~User~
+        +findByEmail(String) Optional~User~
+        +existsByUsername(String) boolean
+        +existsByEmail(String) boolean
+    }
+
+    class JwtUtil {
+        -String secret
+        -Long expiration
+        +generateToken(User) String
+        +validateToken(String) boolean
+        +getUsernameFromToken(String) String
+        +getRoleFromToken(String) String
+    }
+
+    class LoginRequest {
+        -String username
+        -String password
+    }
+
+    class RegisterRequest {
+        -String username
+        -String email
+        -String password
+    }
+
+    class AuthResponse {
+        -String token
+        -String username
+        -String role
+        -String message
+    }
+
+    class UserServiceClient {
+        -RestTemplate restTemplate
+        -String baseUrl
+        +createUserProfile(UserProfileDTO) void
+        +updateUserRole(String, String) void
+    }
+
+    User --> Role : has
+    AuthController --> AuthService : uses
+    AuthService --> UserRepository : uses
+    AuthService --> JwtUtil : uses
+    AuthService --> UserServiceClient : uses
+    AuthController ..> LoginRequest : receives
+    AuthController ..> RegisterRequest : receives
+    AuthController ..> AuthResponse : returns
+    UserRepository ..> User : manages
