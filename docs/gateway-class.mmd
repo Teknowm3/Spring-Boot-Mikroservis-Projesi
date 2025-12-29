@@ -1,0 +1,41 @@
+classDiagram
+    class ApiGatewayApplication {
+        +main(String[]) void
+    }
+
+    class JwtAuthenticationFilter {
+        -JwtUtil jwtUtil
+        +filter(Exchange, Chain) Mono
+        -validateToken(String) boolean
+        -extractToken(Request) String
+    }
+
+    class LoginRateLimitFilter {
+        -RateLimiter rateLimiter
+        +filter(Exchange, Chain) Mono
+        -isRateLimited(String) boolean
+    }
+
+    class RegisterRateLimitFilter {
+        -RateLimiter rateLimiter
+        +filter(Exchange, Chain) Mono
+    }
+
+    class RouteConfig {
+        +authLoginRoute() RouteLocator
+        +authRegisterRoute() RouteLocator
+        +authServiceRoute() RouteLocator
+        +userServiceRoute() RouteLocator
+    }
+
+    class CorsConfig {
+        +corsWebFilter() CorsWebFilter
+        -allowedOrigins() List
+        -allowedMethods() List
+    }
+
+    ApiGatewayApplication --> RouteConfig : configures
+    RouteConfig --> JwtAuthenticationFilter : applies
+    RouteConfig --> LoginRateLimitFilter : applies
+    RouteConfig --> RegisterRateLimitFilter : applies
+    ApiGatewayApplication --> CorsConfig : configures

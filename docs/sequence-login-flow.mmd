@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    participant U as 👤 User
+    participant FE as 🌐 Frontend
+    participant NG as 📡 Nginx
+    participant GW as 🚪 API Gateway
+    participant RL as ⏱️ Rate Limiter
+    participant AU as 🔐 Auth Service
+    participant DB as 🗄️ MySQL
+    participant JWT as 🎫 JWT Util
+
+    U->>FE: Enter username & password
+    FE->>FE: Validate form inputs
+    FE->>NG: POST /api/auth/login
+    NG->>GW: Forward to Gateway
+    
+    GW->>RL: Check rate limit
+    alt Rate limit exceeded
+        RL-->>GW: 429 Too Many Requests
+        GW-->>FE: Error response
+        FE-->>U: "Çok fazla deneme, bekleyin"
+    else Rate limit OK
+        RL-->>GW: Allow
+        GW->>AU: Forward login request
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User not found
+            DB-->>AU: Empty result
+            AU-->>GW: 401 Unauthorized
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı bulunamadı"
+        else User found
+            DB-->>AU: User record
+            AU->>AU: BCrypt.matches(password, hash)
+            
+            alt Password mismatch
+                AU-->>GW: 401 Unauthorized
+                GW-->>FE: Error response
+                FE-->>U: "Şifre hatalı"
+            else Password valid
+                AU->>JWT: generateToken(user)
+                JWT-->>AU: JWT token string
+                AU-->>GW: AuthResponse{token, role}
+                GW-->>FE: 200 OK + token
+                FE->>FE: localStorage.setItem('user', token)
+                FE-->>U: Redirect to Dashboard
+            end
+        end
+    end
