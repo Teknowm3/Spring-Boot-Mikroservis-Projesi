@@ -1,36 +1,263 @@
 {
     "info": {
         "name": "YST Microservices API",
-        "description": "Yazılım Sistem Tasarımı - Spring Boot Microservices Project API Collection",
+        "description": "Yazılım Sistem Tasarımı - Spring Boot Microservices Project API Collection\n\n🔧 Test Senaryosu:\n1. olcay kullanıcısı register et\n2. olcay olarak login ol\n3. Token validate et\n4. Current user bilgisi al\n5. Health check yap\n6. olcay'ı admin yap\n7. Unknown1 kullanıcısı oluştur\n8. Unknown1'i admin yap\n9. Unknown1'i sil",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
         {
             "key": "baseUrl",
-            "value": "http://localhost:8080",
-            "type": "string"
+            "value": "http://34.135.175.32:30080",
+            "type": "string",
+            "description": "Google Cloud Kubernetes API Gateway URL"
         },
         {
             "key": "token",
             "value": "",
-            "type": "string"
+            "type": "string",
+            "description": "JWT Token - Login sonrası otomatik set edilir"
+        },
+        {
+            "key": "adminToken",
+            "value": "",
+            "type": "string",
+            "description": "Admin JWT Token"
         }
     ],
     "item": [
         {
-            "name": "Auth Service",
+            "name": "🔐 Auth Service",
+            "description": "Kimlik doğrulama ve yetkilendirme endpoint'leri",
             "item": [
                 {
-                    "name": "Login",
+                    "name": "1. Register (olcay)",
                     "event": [
                         {
                             "listen": "test",
                             "script": {
                                 "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
                                     "var jsonData = pm.response.json();",
                                     "if (jsonData.token) {",
                                     "    pm.collectionVariables.set('token', jsonData.token);",
-                                    "    console.log('Token saved!');",
+                                    "    console.log('✅ olcay token kaydedildi!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"olcay\",\n  \"password\": \"olcay123\",\n  \"email\": \"olcay@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "olcay kullanıcısını kaydet"
+                    }
+                },
+                {
+                    "name": "2. Login (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.token);",
+                                    "    console.log('✅ olcay token kaydedildi!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"olcay\",\n  \"password\": \"olcay123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "olcay olarak giriş yap ve token al"
+                    }
+                },
+                {
+                    "name": "3. Validate Token (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Token geçerli', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.valid).to.equal(true);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/validate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "validate"
+                            ]
+                        },
+                        "description": "olcay'ın tokenini doğrula"
+                    }
+                },
+                {
+                    "name": "4. Get Current User (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Username olcay', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.username).to.equal('olcay');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "olcay'ın kullanıcı bilgilerini getir"
+                    }
+                },
+                {
+                    "name": "5. Health Check",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Service UP', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.equal('UP');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/health",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "health"
+                            ]
+                        },
+                        "description": "Auth service sağlık kontrolü"
+                    }
+                },
+                {
+                    "name": "6. Login (admin) - Admin Token Al",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.token) {",
+                                    "    pm.collectionVariables.set('adminToken', jsonData.token);",
+                                    "    console.log('✅ Admin token kaydedildi!');",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -60,11 +287,80 @@
                                 "login"
                             ]
                         },
-                        "description": "Kullanıcı girişi ve JWT token alma"
+                        "description": "Admin olarak giriş yap (olcay'ı admin yapmak için)"
                     }
                 },
                 {
-                    "name": "Register",
+                    "name": "7. Update Role (olcay → ADMIN)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Role updated', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.message).to.equal('Role updated');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"role\": \"ADMIN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/olcay/role",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "olcay",
+                                "role"
+                            ]
+                        },
+                        "description": "olcay'ı admin yap"
+                    }
+                },
+                {
+                    "name": "8. Login (olcay - Admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.token);",
+                                    "    console.log('✅ olcay admin token kaydedildi!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "POST",
                         "header": [
@@ -75,90 +371,41 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\"\n}"
+                            "raw": "{\n  \"username\": \"olcay\",\n  \"password\": \"olcay123\"\n}"
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/api/auth/register",
+                            "raw": "{{baseUrl}}/api/auth/login",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "auth",
-                                "register"
+                                "login"
                             ]
                         },
-                        "description": "Yeni kullanıcı kaydı"
+                        "description": "olcay artık admin - yeni token al"
                     }
                 },
                 {
-                    "name": "Validate Token",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
+                    "name": "9. Create User (Unknown1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('User created', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.username).to.equal('Unknown1');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
                             }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/auth/validate",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "auth",
-                                "validate"
-                            ]
-                        },
-                        "description": "JWT token doğrulama"
-                    }
-                },
-                {
-                    "name": "Get Current User (Me)",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/auth/me",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "auth",
-                                "me"
-                            ]
-                        },
-                        "description": "Mevcut kullanıcı bilgilerini getir"
-                    }
-                },
-                {
-                    "name": "Health Check",
-                    "request": {
-                        "method": "GET",
-                        "url": {
-                            "raw": "{{baseUrl}}/api/auth/health",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "auth",
-                                "health"
-                            ]
-                        },
-                        "description": "Auth service health check"
-                    }
-                },
-                {
-                    "name": "Create User (Admin)",
+                        }
+                    ],
                     "request": {
                         "method": "POST",
                         "header": [
@@ -173,7 +420,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"username\": \"newuser\",\n  \"password\": \"password123\",\n  \"email\": \"newuser@example.com\",\n  \"role\": \"USER\"\n}"
+                            "raw": "{\n  \"username\": \"Unknown1\",\n  \"password\": \"unknown123\",\n  \"email\": \"unknown1@example.com\",\n  \"role\": \"USER\"\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/auth/users",
@@ -186,11 +433,28 @@
                                 "users"
                             ]
                         },
-                        "description": "Admin tarafından yeni kullanıcı oluşturma"
+                        "description": "olcay (admin) Unknown1 kullanıcısını oluşturur"
                     }
                 },
                 {
-                    "name": "Update User Role (Admin)",
+                    "name": "10. Update Role (Unknown1 → ADMIN)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Role updated', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.message).to.equal('Role updated');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "PATCH",
                         "header": [
@@ -208,7 +472,7 @@
                             "raw": "{\n  \"role\": \"ADMIN\"\n}"
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/api/auth/users/:username/role",
+                            "raw": "{{baseUrl}}/api/auth/users/Unknown1/role",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -216,21 +480,32 @@
                                 "api",
                                 "auth",
                                 "users",
-                                ":username",
+                                "Unknown1",
                                 "role"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "username",
-                                    "value": "testuser"
-                                }
                             ]
                         },
-                        "description": "Kullanıcı rolünü güncelle (PATCH - kısmi güncelleme)"
+                        "description": "Unknown1'i admin yap"
                     }
                 },
                 {
-                    "name": "Delete User (Admin)",
+                    "name": "11. Delete User (Unknown1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('User deleted', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.message).to.equal('User deleted');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "DELETE",
                         "header": [
@@ -240,7 +515,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/auth/users/:username",
+                            "raw": "{{baseUrl}}/api/auth/users/Unknown1",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -248,25 +523,217 @@
                                 "api",
                                 "auth",
                                 "users",
-                                ":username"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "username",
-                                    "value": "testuser"
-                                }
+                                "Unknown1"
                             ]
                         },
-                        "description": "Kullanıcıyı sil"
+                        "description": "Unknown1 kullanıcısını sil"
                     }
                 }
             ]
         },
         {
-            "name": "User Service",
+            "name": "👥 User Service",
+            "description": "Kullanıcı profil yönetimi endpoint'leri - olcay admin tokeni ile",
             "item": [
                 {
-                    "name": "Get All Users",
+                    "name": "1. Create User (Seyfo)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Seyfo\",\n  \"password\": \"seyfo123\",\n  \"email\": \"seyfo@example.com\",\n  \"role\": \"USER\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        },
+                        "description": "Seyfo kullanıcısını oluştur (olcay admin tokeni ile)"
+                    }
+                },
+                {
+                    "name": "2. Create User (Olci)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Olci\",\n  \"password\": \"olci123\",\n  \"email\": \"olci@example.com\",\n  \"role\": \"USER\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        },
+                        "description": "Olci kullanıcısını oluştur"
+                    }
+                },
+                {
+                    "name": "3. Create User (Deneme1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Deneme1\",\n  \"password\": \"deneme123\",\n  \"email\": \"deneme1@example.com\",\n  \"role\": \"USER\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        },
+                        "description": "Deneme1 kullanıcısını oluştur"
+                    }
+                },
+                {
+                    "name": "4. Create User (Deneme2)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201 Created', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"Deneme2\",\n  \"password\": \"deneme456\",\n  \"email\": \"deneme2@example.com\",\n  \"role\": \"USER\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        },
+                        "description": "Deneme2 kullanıcısını oluştur"
+                    }
+                },
+                {
+                    "name": "5. Get All Users",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response is array', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [
@@ -285,11 +752,24 @@
                                 "users"
                             ]
                         },
-                        "description": "Tüm kullanıcıları listele (Admin only)"
+                        "description": "Tüm kullanıcıları listele (olcay admin tokeni ile)"
                     }
                 },
                 {
-                    "name": "Get My Profile",
+                    "name": "6. Get My Profile (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [
@@ -309,11 +789,24 @@
                                 "me"
                             ]
                         },
-                        "description": "Kendi profilini getir"
+                        "description": "olcay'ın profilini getir"
                     }
                 },
                 {
-                    "name": "Get User by ID",
+                    "name": "7. Get User by ID (1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [
@@ -323,27 +816,34 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/:id",
+                            "raw": "{{baseUrl}}/api/users/1",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "value": "1"
-                                }
+                                "1"
                             ]
                         },
-                        "description": "ID ile kullanıcı getir"
+                        "description": "ID=1 olan kullanıcıyı getir"
                     }
                 },
                 {
-                    "name": "Get User by Username",
+                    "name": "8. Get User by Username (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [
@@ -353,7 +853,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/username/:username",
+                            "raw": "{{baseUrl}}/api/users/username/olcay",
                             "host": [
                                 "{{baseUrl}}"
                             ],
@@ -361,20 +861,27 @@
                                 "api",
                                 "users",
                                 "username",
-                                ":username"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "username",
-                                    "value": "admin"
-                                }
+                                "olcay"
                             ]
                         },
-                        "description": "Username ile kullanıcı getir"
+                        "description": "olcay kullanıcısını username ile getir"
                     }
                 },
                 {
-                    "name": "Update User Profile",
+                    "name": "9. Update User Profile (olcay - ID 1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -389,30 +896,37 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"555-1234\",\n  \"address\": \"Istanbul, Turkey\"\n}"
+                            "raw": "{\n  \"username\": \"olcay\",\n  \"email\": \"olcay.alkan@example.com\",\n  \"firstName\": \"Olcay\",\n  \"lastName\": \"Alkan\",\n  \"phone\": \"0532-123-4567\",\n  \"address\": \"Istanbul, Turkiye\"\n}"
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/:id",
+                            "raw": "{{baseUrl}}/api/users/1",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "value": "1"
-                                }
+                                "1"
                             ]
                         },
-                        "description": "Kullanıcı profilini güncelle (PUT - tam güncelleme)"
+                        "description": "olcay'ın profilini güncelle (ID=1)"
                     }
                 },
                 {
-                    "name": "Delete User by ID",
+                    "name": "10. Delete User by ID (1)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200 veya 204', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "DELETE",
                         "header": [
@@ -422,29 +936,46 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/:id",
+                            "raw": "{{baseUrl}}/api/users/1",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "value": "1"
-                                }
+                                "1"
                             ]
                         },
-                        "description": "ID ile kullanıcı sil (Admin only)"
+                        "description": "ID=1 olan kullanıcıyı sil"
                     }
                 },
                 {
-                    "name": "Health Check",
+                    "name": "11. Health Check",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Service UP', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.equal('UP');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
                         "url": {
                             "raw": "{{baseUrl}}/api/users/health",
                             "host": [
@@ -456,7 +987,138 @@
                                 "health"
                             ]
                         },
-                        "description": "User service health check"
+                        "description": "User service sağlık kontrolü"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🧹 Cleanup - Tüm Kullanıcıları Sil",
+            "description": "Test sonrası tüm kullanıcıları temizlemek için",
+            "item": [
+                {
+                    "name": "1. Delete olcay",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/olcay",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "olcay"
+                            ]
+                        },
+                        "description": "olcay kullanıcısını sil"
+                    }
+                },
+                {
+                    "name": "2. Delete Seyfo",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/Seyfo",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "Seyfo"
+                            ]
+                        },
+                        "description": "Seyfo kullanıcısını sil"
+                    }
+                },
+                {
+                    "name": "3. Delete Olci",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/Olci",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "Olci"
+                            ]
+                        },
+                        "description": "Olci kullanıcısını sil"
+                    }
+                },
+                {
+                    "name": "4. Delete Deneme1",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/Deneme1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "Deneme1"
+                            ]
+                        },
+                        "description": "Deneme1 kullanıcısını sil"
+                    }
+                },
+                {
+                    "name": "5. Delete Deneme2",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/Deneme2",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "Deneme2"
+                            ]
+                        },
+                        "description": "Deneme2 kullanıcısını sil"
                     }
                 }
             ]
