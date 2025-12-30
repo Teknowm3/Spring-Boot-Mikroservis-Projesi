@@ -22,6 +22,12 @@
             "value": "",
             "type": "string",
             "description": "Admin JWT Token"
+        },
+        {
+            "key": "olcayId",
+            "value": "",
+            "type": "string",
+            "description": "olcay kullanıcısının ID'si - Get User by Username ile otomatik set edilir"
         }
     ],
     "item": [
@@ -793,7 +799,7 @@
                     }
                 },
                 {
-                    "name": "7. Get User by ID (1)",
+                    "name": "7. Get User by Username (olcay) - ID Al",
                     "event": [
                         {
                             "listen": "test",
@@ -801,44 +807,12 @@
                                 "exec": [
                                     "pm.test('Status 200', function () {",
                                     "    pm.response.to.have.status(200);",
-                                    "});"
-                                ],
-                                "type": "text/javascript"
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/api/users/1",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "api",
-                                "users",
-                                "1"
-                            ]
-                        },
-                        "description": "ID=1 olan kullanıcıyı getir"
-                    }
-                },
-                {
-                    "name": "8. Get User by Username (olcay)",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                    "pm.test('Status 200', function () {",
-                                    "    pm.response.to.have.status(200);",
-                                    "});"
+                                    "});",
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.id) {",
+                                    "    pm.collectionVariables.set('olcayId', jsonData.id);",
+                                    "    console.log('✅ olcay ID kaydedildi: ' + jsonData.id);",
+                                    "}"
                                 ],
                                 "type": "text/javascript"
                             }
@@ -864,11 +838,48 @@
                                 "olcay"
                             ]
                         },
-                        "description": "olcay kullanıcısını username ile getir"
+                        "description": "olcay kullanıcısını username ile getir ve ID'sini kaydet"
                     }
                 },
                 {
-                    "name": "9. Update User Profile (olcay - ID 1)",
+                    "name": "8. Get User by ID (olcay)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/users/{{olcayId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "users",
+                                "{{olcayId}}"
+                            ]
+                        },
+                        "description": "olcay kullanıcısını ID ile getir"
+                    }
+                },
+                {
+                    "name": "9. Update User Profile (olcay)",
                     "event": [
                         {
                             "listen": "test",
@@ -899,21 +910,21 @@
                             "raw": "{\n  \"username\": \"olcay\",\n  \"email\": \"olcay.alkan@example.com\",\n  \"firstName\": \"Olcay\",\n  \"lastName\": \"Alkan\",\n  \"phone\": \"0532-123-4567\",\n  \"address\": \"Istanbul, Turkiye\"\n}"
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/1",
+                            "raw": "{{baseUrl}}/api/users/{{olcayId}}",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "users",
-                                "1"
+                                "{{olcayId}}"
                             ]
                         },
-                        "description": "olcay'ın profilini güncelle (ID=1)"
+                        "description": "olcay'ın profilini güncelle (dinamik ID kullanarak)"
                     }
                 },
                 {
-                    "name": "10. Delete User by ID (1)",
+                    "name": "10. Delete User by ID (olcay)",
                     "event": [
                         {
                             "listen": "test",
@@ -936,17 +947,17 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseUrl}}/api/users/1",
+                            "raw": "{{baseUrl}}/api/users/{{olcayId}}",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "users",
-                                "1"
+                                "{{olcayId}}"
                             ]
                         },
-                        "description": "ID=1 olan kullanıcıyı sil"
+                        "description": "olcay kullanıcısını sil (dinamik ID kullanarak)"
                     }
                 },
                 {

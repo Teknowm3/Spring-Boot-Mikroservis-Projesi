@@ -1,0 +1,1731 @@
+{
+    "info": {
+        "name": "YST Stress Test - DDOS Simulation",
+        "description": "Stress Test Collection\n\n🔥 30 kullanıcı oluştur + 30 kullanıcı sil\n\nÖNCE: Admin token alınmalı (YST_Microservices_API collection'dan 6. adım)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://34.135.175.32:30080",
+            "type": "string",
+            "description": "Google Cloud Kubernetes API Gateway URL"
+        },
+        {
+            "key": "adminToken",
+            "value": "",
+            "type": "string",
+            "description": "Admin JWT Token - Manuel olarak set edin veya login sonrası"
+        }
+    ],
+    "item": [
+        {
+            "name": "🔐 Login (Admin)",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test('Status 200', function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "var jsonData = pm.response.json();",
+                            "if (jsonData.token) {",
+                            "    pm.collectionVariables.set('adminToken', jsonData.token);",
+                            "    console.log('✅ Admin token kaydedildi!');",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/auth/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "auth",
+                        "login"
+                    ]
+                },
+                "description": "Admin olarak giriş yap"
+            }
+        },
+        {
+            "name": "🚀 Create Users (30 adet)",
+            "description": "30 kullanıcı oluştur",
+            "item": [
+                {
+                    "name": "Create StressUser01",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser01\", \"password\": \"stress123\", \"email\": \"stress01@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser02",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser02\", \"password\": \"stress123\", \"email\": \"stress02@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser03",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser03\", \"password\": \"stress123\", \"email\": \"stress03@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser04",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser04\", \"password\": \"stress123\", \"email\": \"stress04@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser05",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser05\", \"password\": \"stress123\", \"email\": \"stress05@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser06",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser06\", \"password\": \"stress123\", \"email\": \"stress06@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser07",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser07\", \"password\": \"stress123\", \"email\": \"stress07@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser08",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser08\", \"password\": \"stress123\", \"email\": \"stress08@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser09",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser09\", \"password\": \"stress123\", \"email\": \"stress09@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser10",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser10\", \"password\": \"stress123\", \"email\": \"stress10@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser11",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser11\", \"password\": \"stress123\", \"email\": \"stress11@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser12",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser12\", \"password\": \"stress123\", \"email\": \"stress12@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser13",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser13\", \"password\": \"stress123\", \"email\": \"stress13@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser14",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser14\", \"password\": \"stress123\", \"email\": \"stress14@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser15",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser15\", \"password\": \"stress123\", \"email\": \"stress15@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser16",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser16\", \"password\": \"stress123\", \"email\": \"stress16@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser17",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser17\", \"password\": \"stress123\", \"email\": \"stress17@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser18",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser18\", \"password\": \"stress123\", \"email\": \"stress18@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser19",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser19\", \"password\": \"stress123\", \"email\": \"stress19@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser20",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser20\", \"password\": \"stress123\", \"email\": \"stress20@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser21",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser21\", \"password\": \"stress123\", \"email\": \"stress21@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser22",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser22\", \"password\": \"stress123\", \"email\": \"stress22@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser23",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser23\", \"password\": \"stress123\", \"email\": \"stress23@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser24",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser24\", \"password\": \"stress123\", \"email\": \"stress24@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser25",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser25\", \"password\": \"stress123\", \"email\": \"stress25@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser26",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser26\", \"password\": \"stress123\", \"email\": \"stress26@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser27",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser27\", \"password\": \"stress123\", \"email\": \"stress27@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser28",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser28\", \"password\": \"stress123\", \"email\": \"stress28@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser29",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser29\", \"password\": \"stress123\", \"email\": \"stress29@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create StressUser30",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"username\": \"StressUser30\", \"password\": \"stress123\", \"email\": \"stress30@test.com\", \"role\": \"USER\"}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🗑️ Delete Users (30 adet)",
+            "description": "30 kullanıcıyı sil",
+            "item": [
+                {
+                    "name": "Delete StressUser01",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser01",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser01"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser02",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser02",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser02"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser03",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser03",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser03"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser04",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser04",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser04"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser05",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser05",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser05"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser06",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser06",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser06"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser07",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser07",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser07"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser08",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser08",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser08"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser09",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser09",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser09"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser10",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser10",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser10"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser11",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser11",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser11"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser12",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser12",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser12"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser13",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser13",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser13"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser14",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser14",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser14"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser15",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser15",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser15"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser16",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser16",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser16"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser17",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser17",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser17"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser18",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser18",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser18"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser19",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser19",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser19"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser20",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser20",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser20"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser21",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser21",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser21"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser22",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser22",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser22"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser23",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser23",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser23"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser24",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser24",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser24"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser25",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser25",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser25"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser26",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser26",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser26"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser27",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser27",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser27"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser28",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser28",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser28"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser29",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser29",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser29"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StressUser30",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/users/StressUser30",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "users",
+                                "StressUser30"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
