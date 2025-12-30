@@ -67,7 +67,7 @@ public class UserServiceClient {
         String timestamp = String.valueOf(System.currentTimeMillis());
         String signature = InternalRequestSigner.sign(
                 internalSignatureSecret,
-                "PUT",
+                "PATCH",
                 path,
                 "",
                 "auth-service",
@@ -82,7 +82,7 @@ public class UserServiceClient {
         headers.set("X-Internal-Signature", signature == null ? "" : signature);
 
         Map<String, String> body = Map.of("role", role);
-        restTemplate.exchange(url, org.springframework.http.HttpMethod.PUT, new HttpEntity<>(body, headers), String.class);
+        restTemplate.exchange(url, org.springframework.http.HttpMethod.PATCH, new HttpEntity<>(body, headers), String.class);
     }
 
     public void deleteUserProfileByUsername(String username) {

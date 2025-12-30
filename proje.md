@@ -470,67 +470,298 @@ Pipeline şu durumlarda çalışır:
 
 ### Auth Service Endpoints
 
-```
+#### 1. Register (Yeni Kullanıcı Kaydı)
+```http
 POST /api/auth/register
+Content-Type: application/json
+
 Request Body:
 {
-  "username": "john_doe",
-  "email": "john@email.com",
-  "password": "secret123"
+  "username": "olcay",
+  "password": "olcay123",
+  "email": "olcay@example.com"
 }
 
-Response:
+Response (201 Created):
 {
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "username": "john_doe",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "username": "olcay",
   "role": "USER",
   "message": "Registration successful"
 }
 ```
 
-```
+#### 2. Login (Kullanıcı Girişi)
+```http
 POST /api/auth/login
+Content-Type: application/json
+
 Request Body:
 {
   "username": "admin",
   "password": "admin"
 }
 
-Response:
+Response (200 OK):
 {
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "username": "admin",
+  "role": "ADMIN",
+  "message": "Login successful"
+}
+```
+
+#### 3. Validate Token (Token Doğrulama)
+```http
+GET /api/auth/validate
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "valid": true
+}
+```
+
+#### 4. Get Current User (Mevcut Kullanıcı Bilgisi)
+```http
+GET /api/auth/me
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "username": "olcay",
+  "email": "olcay@example.com",
+  "role": "USER"
+}
+```
+
+#### 5. Health Check (Servis Sağlık Kontrolü)
+```http
+GET /api/auth/health
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "status": "UP"
+}
+```
+
+#### 6. Update Role (Rol Güncelleme - Admin)
+```http
+PATCH /api/auth/users/{username}/role
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+Request Body:
+{
   "role": "ADMIN"
+}
+
+Response (200 OK):
+{
+  "message": "Role updated"
+}
+```
+
+#### 7. Create User (Kullanıcı Oluşturma - Admin)
+```http
+POST /api/auth/users
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+Request Body:
+{
+  "username": "Unknown1",
+  "password": "unknown123",
+  "email": "unknown1@example.com",
+  "role": "USER"
+}
+
+Response (201 Created):
+{
+  "username": "Unknown1",
+  "role": "USER",
+  "message": "User created"
+}
+```
+
+#### 8. Delete User (Kullanıcı Silme - Admin)
+```http
+DELETE /api/auth/users/{username}
+Authorization: Bearer {admin_token}
+
+Response (200 OK):
+{
+  "message": "User deleted"
 }
 ```
 
 ### User Service Endpoints
 
-```
-GET /api/users
-Headers: Authorization: Bearer {token}
+#### 1. Create User Profile (Profil Oluşturma)
+```http
+POST /api/auth/users
+Authorization: Bearer {admin_token}
+Content-Type: application/json
 
-Response:
+Request Body:
+{
+  "username": "Seyfo",
+  "password": "seyfo123",
+  "email": "seyfo@example.com",
+  "role": "USER"
+}
+
+Response (201 Created):
+{
+  "id": 5,
+  "username": "Seyfo",
+  "email": "seyfo@example.com",
+  "role": "USER"
+}
+```
+
+#### 2. Get All Users (Tüm Kullanıcılar - Admin)
+```http
+GET /api/users
+Authorization: Bearer {admin_token}
+
+Response (200 OK):
 [
   {
     "id": 1,
     "username": "admin",
     "email": "admin@admin.local",
     "role": "ADMIN",
+    "firstName": "Admin",
+    "lastName": "User"
+  },
+  {
+    "id": 2,
+    "username": "olcay",
+    "email": "olcay@example.com",
+    "role": "USER",
     "firstName": null,
     "lastName": null
-  },
-  ...
+  }
 ]
 ```
 
-```
-PATCH /api/auth/users/{username}/role
-Headers: Authorization: Bearer {admin_token}
-Request Body: { "role": "ADMIN" }
+#### 3. Get My Profile (Kendi Profilim)
+```http
+GET /api/users/me
+Authorization: Bearer {token}
 
-Response: 200 OK
+Response (200 OK):
+{
+  "id": 2,
+  "username": "olcay",
+  "email": "olcay@example.com",
+  "role": "USER",
+  "firstName": null,
+  "lastName": null,
+  "phone": null,
+  "address": null
+}
 ```
+
+#### 4. Get User by ID (ID ile Kullanıcı)
+```http
+GET /api/users/{id}
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "id": 1,
+  "username": "admin",
+  "email": "admin@admin.local",
+  "role": "ADMIN",
+  "firstName": "Admin",
+  "lastName": "User"
+}
+```
+
+#### 5. Get User by Username (Username ile Kullanıcı)
+```http
+GET /api/users/username/{username}
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "id": 2,
+  "username": "olcay",
+  "email": "olcay@example.com",
+  "role": "USER",
+  "firstName": "Olcay",
+  "lastName": "Alkan"
+}
+```
+
+#### 6. Update User Profile (Profil Güncelleme)
+```http
+PUT /api/users/{id}
+Authorization: Bearer {token}
+Content-Type: application/json
+
+Request Body:
+{
+  "username": "olcay",
+  "email": "olcay.alkan@example.com",
+  "firstName": "Olcay",
+  "lastName": "Alkan",
+  "phone": "0532-123-4567",
+  "address": "Istanbul, Turkiye"
+}
+
+Response (200 OK):
+{
+  "id": 1,
+  "username": "olcay",
+  "email": "olcay.alkan@example.com",
+  "firstName": "Olcay",
+  "lastName": "Alkan",
+  "phone": "0532-123-4567",
+  "address": "Istanbul, Turkiye"
+}
+```
+
+#### 7. Delete User by ID (ID ile Silme)
+```http
+DELETE /api/users/{id}
+Authorization: Bearer {admin_token}
+
+Response (200 OK / 204 No Content)
+```
+
+#### 8. Health Check (Servis Sağlık Kontrolü)
+```http
+GET /api/users/health
+Authorization: Bearer {token}
+
+Response (200 OK):
+{
+  "status": "UP"
+}
+```
+
+### Postman Collection Test Senaryosu
+
+Proje ile birlikte Postman Collection (`YST_Microservices_API.postman_collection.json`) sağlanmaktadır. Bu collection şu test senaryosunu içerir:
+
+1. ✅ olcay kullanıcısı register et
+2. ✅ olcay olarak login ol
+3. ✅ Token validate et
+4. ✅ Current user bilgisi al
+5. ✅ Health check yap
+6. ✅ olcay'ı admin yap
+7. ✅ Unknown1 kullanıcısı oluştur
+8. ✅ Unknown1'i admin yap
+9. ✅ Unknown1'i sil
+
+**Postman Collection Değişkenleri:**
+- `baseUrl`: `http://34.135.175.32:30080` (Google Cloud Kubernetes API Gateway URL)
+- `token`: JWT Token - Login sonrası otomatik set edilir
+- `adminToken`: Admin JWT Token - Admin login sonrası set edilir
 
 
 
