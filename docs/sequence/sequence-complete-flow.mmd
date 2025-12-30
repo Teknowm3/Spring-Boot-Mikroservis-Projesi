@@ -1,0 +1,323 @@
+sequenceDiagram
+    autonumber
+    participant U as 👤 User/Admin
+    participant FE as 🌐 Frontend
+    participant NG as 📡 Nginx
+    participant GW as 🚪 API Gateway
+    participant RL as ⏱️ Rate Limiter
+    participant AU as 🔐 Auth Service
+    participant US as 👥 User Service
+    participant DB as 🗄️ MySQL (Auth)
+    participant UDB as 🗄️ MySQL (User)
+    participant JWT as 🎫 JWT Util
+
+    Note over U,JWT: === 1. KULLANICI KAYIT AKIŞI (REGISTER) ===
+    
+    U->>FE: Enter registration data (username, password, email)
+    FE->>FE: Validate form inputs
+    FE->>NG: POST /api/auth/register
+    NG->>GW: Forward to Gateway
+    GW->>RL: Check rate limit
+    
+    alt Rate limit exceeded
+        RL-->>GW: 429 Too Many Requests
+        GW-->>FE: Error response
+        FE-->>U: "Çok fazla deneme"
+    else Rate limit OK
+        RL-->>GW: Allow
+        GW->>AU: Forward register request
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User already exists
+            DB-->>AU: User found
+            AU-->>GW: 400 Bad Request
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı zaten var"
+        else User not exists
+            DB-->>AU: Empty result
+            AU->>AU: BCrypt.encode(password)
+            AU->>DB: INSERT INTO users (username, password, email, role='USER')
+            DB-->>AU: User created (id, username, role)
+            AU->>JWT: generateToken(user)
+            JWT-->>AU: JWT token
+            
+            Note over AU,US: Auth-Service -> User-Service Internal Call
+            AU->>US: POST /api/users (X-User-Id: "auth-service")
+            AU->>US: Body: {username, email, role: "USER"}
+            US->>UDB: INSERT INTO user_profiles
+            UDB-->>US: Profile created
+            US-->>AU: 201 Created
+            
+            AU-->>GW: AuthResponse{token, username, role: "USER"}
+            GW-->>FE: 201 Created + token
+            FE->>FE: localStorage.setItem('user', token)
+            FE-->>U: "Kayıt başarılı, yönlendiriliyorsunuz..."
+        end
+    end
+
+    Note over U,JWT: === 2. KULLANICI GİRİŞ AKIŞI (LOGIN) ===
+    
+    U->>FE: Enter username & password
+    FE->>FE: Validate form inputs
+    FE->>NG: POST /api/auth/login
+    NG->>GW: Forward to Gateway
+    GW->>RL: Check rate limit
+    
+    alt Rate limit exceeded
+        RL-->>GW: 429 Too Many Requests
+        GW-->>FE: Error response
+        FE-->>U: "Çok fazla deneme, bekleyin"
+    else Rate limit OK
+        RL-->>GW: Allow
+        GW->>AU: Forward login request
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User not found
+            DB-->>AU: Empty result
+            AU-->>GW: 401 Unauthorized
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı bulunamadı"
+        else User found
+            DB-->>AU: User record (id, username, passwordHash, role)
+            AU->>AU: BCrypt.matches(password, hash)
+            
+            alt Password mismatch
+                AU-->>GW: 401 Unauthorized
+                GW-->>FE: Error response
+                FE-->>U: "Şifre hatalı"
+            else Password valid
+                AU->>JWT: generateToken(user)
+                JWT-->>AU: JWT token string
+                AU-->>GW: AuthResponse{token, username, role}
+                GW-->>FE: 200 OK + token
+                FE->>FE: localStorage.setItem('user', token)
+                
+                alt User is ADMIN
+                    FE-->>U: Redirect to Admin Dashboard
+                else User is USER
+                    FE-->>U: Redirect to User Dashboard
+                end
+            end
+        end
+    end
+
+    Note over U,JWT: === 3. KULLANICI PROFİL GÖRÜNTÜLEME ===
+    
+    U->>FE: Click "My Profile"
+    FE->>NG: GET /api/users/me (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT token
+    
+    alt Invalid/Expired token
+        GW-->>FE: 401 Unauthorized
+        FE-->>U: Redirect to Login
+    else Valid token
+        GW->>GW: Extract username & role from token
+        GW->>US: GET /api/users/me (X-User-Id: username, X-Roles: role)
+        US->>US: Extract username from X-User-Id
+        US->>UDB: SELECT * FROM user_profiles WHERE username=?
+        
+        alt Profile not found
+            UDB-->>US: Empty result
+            US-->>GW: 404 Not Found
+            GW-->>FE: Error response
+            FE-->>U: "Profil bulunamadı"
+        else Profile found
+            UDB-->>US: UserProfile data
+            US-->>GW: 200 OK + profile data
+            GW-->>FE: Profile data
+            FE-->>U: Display profile (name, email, phone, address)
+        end
+    end
+
+    Note over U,JWT: === 4. KULLANICI PROFİL GÜNCELLEME ===
+    
+    U->>FE: Update profile (firstName, lastName, email, phone, address)
+    FE->>FE: Validate form inputs
+    FE->>NG: PUT /api/users/{id} (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT & Extract user info
+    GW->>US: PUT /api/users/{id} (X-User-Id: username, X-Roles: role)
+    
+    US->>US: Check permission (user can only update own profile)
+    alt Not authorized
+        US-->>GW: 403 Forbidden
+        GW-->>FE: Error response
+        FE-->>U: "Yetkiniz yok"
+    else Authorized
+        US->>UDB: UPDATE user_profiles SET ... WHERE id=?
+        UDB-->>US: Updated
+        US->>UDB: SELECT * FROM user_profiles WHERE id=?
+        UDB-->>US: Updated profile
+        US-->>GW: 200 OK + updated profile
+        GW-->>FE: Updated profile
+        FE-->>U: "Profil güncellendi"
+    end
+
+    Note over U,JWT: === 5. ADMIN: TÜM KULLANICILARI GÖRÜNTÜLEME ===
+    
+    U->>FE: Click "All Users" (Admin Dashboard)
+    FE->>NG: GET /api/users (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT & Extract role
+    GW->>US: GET /api/users (X-User-Id: username, X-Roles: ROLE_ADMIN)
+    
+    US->>US: Check isAdmin (X-Roles contains ROLE_ADMIN)
+    alt Not admin
+        US-->>GW: 403 Forbidden
+        GW-->>FE: Error response
+        FE-->>U: "Yetkiniz yok"
+    else Is admin
+        US->>UDB: SELECT * FROM user_profiles
+        UDB-->>US: List of all users
+        US-->>GW: 200 OK + user list
+        GW-->>FE: User list
+        FE-->>U: Display user table
+    end
+
+    Note over U,JWT: === 6. ADMIN: YENİ KULLANICI OLUŞTURMA ===
+    
+    U->>FE: Fill create user form (username, password, email, role)
+    FE->>FE: Validate form
+    FE->>NG: POST /api/auth/users (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT & Extract role
+    GW->>AU: POST /api/auth/users (Authentication with ROLE_ADMIN)
+    
+    AU->>AU: Check isAdmin
+    alt Not admin
+        AU-->>GW: 403 Forbidden
+        GW-->>FE: Error response
+        FE-->>U: "Yetkiniz yok"
+    else Is admin
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User exists
+            DB-->>AU: User found
+            AU-->>GW: 400 Bad Request
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı zaten var"
+        else User not exists
+            DB-->>AU: Empty result
+            AU->>AU: BCrypt.encode(password)
+            AU->>AU: Parse and validate role (USER/ADMIN)
+            AU->>DB: INSERT INTO users (username, password, email, role)
+            DB-->>AU: User created
+            
+            Note over AU,US: Auth creates user profile in User-Service
+            AU->>US: POST /api/users (X-User-Id: "auth-service")
+            AU->>US: Body: {username, email, role}
+            US->>UDB: INSERT INTO user_profiles
+            UDB-->>US: Profile created
+            US-->>AU: 201 Created
+            
+            AU-->>GW: 201 Created {message, username, role}
+            GW-->>FE: Success response
+            FE-->>U: "Kullanıcı oluşturuldu"
+            FE->>FE: Refresh user list
+        end
+    end
+
+    Note over U,JWT: === 7. ADMIN: KULLANICI ROLÜ GÜNCELLEME ===
+    
+    U->>FE: Select user & change role (USER ↔ ADMIN)
+    FE->>FE: Confirm action
+    FE->>NG: PATCH /api/auth/users/{username}/role (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT & Extract role
+    GW->>AU: PATCH /api/auth/users/{username}/role
+    
+    AU->>AU: Check isAdmin
+    alt Not admin
+        AU-->>GW: 403 Forbidden
+        GW-->>FE: Error response
+        FE-->>U: "Yetkiniz yok"
+    else Is admin
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User not found
+            DB-->>AU: Empty result
+            AU-->>GW: 404 Not Found
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı bulunamadı"
+        else User found
+            DB-->>AU: User record
+            AU->>AU: Validate role (USER/ADMIN)
+            AU->>DB: UPDATE users SET role=? WHERE username=?
+            DB-->>AU: Updated
+            
+            Note over AU,US: Sync role to User-Service
+            AU->>US: PATCH /api/users/username/{username}/role
+            AU->>US: (X-User-Id: "auth-service", Body: {role})
+            US->>UDB: UPDATE user_profiles SET role=? WHERE username=?
+            UDB-->>US: Updated
+            US-->>AU: 200 OK
+            
+            AU-->>GW: 200 OK {message: "Role updated"}
+            GW-->>FE: Success response
+            FE-->>U: "Rol güncellendi"
+            FE->>FE: Refresh user list
+        end
+    end
+
+    Note over U,JWT: === 8. ADMIN: KULLANICI SİLME ===
+    
+    U->>FE: Click delete user button
+    FE->>FE: Confirm deletion
+    FE->>NG: DELETE /api/auth/users/{username} (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>GW: Validate JWT & Extract role
+    GW->>AU: DELETE /api/auth/users/{username}
+    
+    AU->>AU: Check isAdmin
+    alt Not admin
+        AU-->>GW: 403 Forbidden
+        GW-->>FE: Error response
+        FE-->>U: "Yetkiniz yok"
+    else Is admin
+        AU->>DB: SELECT * FROM users WHERE username=?
+        
+        alt User not found
+            DB-->>AU: Empty result
+            AU-->>GW: 404 Not Found
+            GW-->>FE: Error response
+            FE-->>U: "Kullanıcı bulunamadı"
+        else User found
+            DB-->>AU: User record
+            AU->>DB: DELETE FROM users WHERE username=?
+            DB-->>AU: Deleted
+            
+            Note over AU,US: Delete user profile from User-Service
+            AU->>US: DELETE /api/users/username/{username}
+            AU->>US: (X-User-Id: "auth-service")
+            US->>US: Verify caller is auth-service
+            US->>UDB: DELETE FROM user_profiles WHERE username=?
+            UDB-->>US: Deleted
+            US-->>AU: 200 OK
+            
+            AU-->>GW: 200 OK {message: "User deleted", username}
+            GW-->>FE: Success response
+            FE-->>U: "Kullanıcı silindi"
+            FE->>FE: Remove from user list
+        end
+    end
+
+    Note over U,JWT: === 9. TOKEN DOĞRULAMA (VALIDATE) ===
+    
+    FE->>NG: GET /api/auth/validate (Bearer token)
+    NG->>GW: Forward to Gateway
+    GW->>AU: GET /api/auth/validate
+    AU->>JWT: validateToken(token)
+    
+    alt Token invalid/expired
+        JWT-->>AU: false
+        AU-->>GW: {valid: false}
+        GW-->>FE: {valid: false}
+        FE->>FE: Clear localStorage
+        FE-->>U: Redirect to Login
+    else Token valid
+        JWT-->>AU: true
+        AU-->>GW: {valid: true}
+        GW-->>FE: {valid: true}
+        FE-->>U: Continue session
+    end

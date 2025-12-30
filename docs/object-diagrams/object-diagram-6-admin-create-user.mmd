@@ -1,0 +1,115 @@
+---
+%% 6. ADMIN CREATE USER - OBJECT DIAGRAM
+%% Shows object states when admin creates a new user
+---
+
+classDiagram
+    class httpRequest ["httpRequest: HttpServletRequest"] {
+        method = "POST"
+        path = "/api/auth/users"
+        headers = {
+            "Authorization": "Bearer eyJhbGc...",
+            "Content-Type": "application/json"
+        }
+    }
+    
+    class authentication ["authentication: Authentication"] {
+        name = "admin"
+        authenticated = true
+        authorities = ["ROLE_ADMIN"]
+        principal = UserDetails(admin)
+    }
+    
+    class adminCheck ["adminCheck: boolean"] {
+        authorities = ["ROLE_ADMIN"]
+        hasRoleAdmin = true
+        isAdmin = true
+    }
+    
+    class createRequest ["createRequest: AdminCreateUserRequest"] {
+        username = "bob"
+        password = "password123"
+        email = "bob@example.com"
+        role = "USER"
+    }
+    
+    class newUserAuth ["newUserAuth: User"] {
+        id = null (before save)
+        username = "bob"
+        password = "$2a$10$newHash..." (BCrypt)
+        email = "bob@example.com"
+        role = Role.USER
+    }
+    
+    class savedUserAuth ["savedUserAuth: User"] {
+        id = 7
+        username = "bob"
+        password = "$2a$10$newHash..."
+        email = "bob@example.com"
+        role = Role.USER
+    }
+    
+    class internalRequest ["internalRequest: HTTP Request"] {
+        method = "POST"
+        url = "http://user-service:8082/api/users"
+        headers = {
+            "X-User-Id": "auth-service",
+            "X-Roles": "ROLE_USER",
+            "X-Internal-Timestamp": "1735509600000",
+            "X-Internal-Signature": "XyZ123ABC..."
+        }
+        body = {
+            username: "bob",
+            email: "bob@example.com",
+            role: "USER"
+        }
+    }
+    
+    class newUserProfile ["newUserProfile: UserProfile"] {
+        id = null (before save)
+        username = "bob"
+        email = "bob@example.com"
+        role = "USER"
+        firstName = null
+        lastName = null
+        phone = null
+        address = null
+    }
+    
+    class savedUserProfile ["savedUserProfile: UserProfile"] {
+        id = 7
+        username = "bob"
+        email = "bob@example.com"
+        role = "USER"
+        firstName = null
+        lastName = null
+        phone = null
+        address = null
+        createdAt = "2025-12-29T23:20:00"
+        updatedAt = "2025-12-29T23:20:00"
+    }
+    
+    class responseEntity ["responseEntity: ResponseEntity"] {
+        status = 201 CREATED
+        body = {
+            message: "User created",
+            username: "bob",
+            role: "USER"
+        }
+    }
+    
+    %% Relationships
+    httpRequest --> authentication : "extracts from SecurityContext"
+    authentication --> adminCheck : "validates role"
+    httpRequest --> createRequest : "request body parsed to"
+    createRequest --> newUserAuth : "converted to"
+    newUserAuth --> savedUserAuth : "saved to Auth DB"
+    savedUserAuth --> internalRequest : "triggers"
+    internalRequest --> newUserProfile : "creates in User Service"
+    newUserProfile --> savedUserProfile : "saved to User DB"
+    savedUserAuth --> responseEntity : "generates"
+    
+    note for adminCheck "Only admins can create users"
+    note for savedUserAuth "Stored in Auth Service DB"
+    note for internalRequest "Internal service-to-service call"
+    note for savedUserProfile "Stored in User Service DB"

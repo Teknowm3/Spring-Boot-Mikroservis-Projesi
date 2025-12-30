@@ -1,0 +1,115 @@
+---
+%% 7. ADMIN UPDATE ROLE - OBJECT DIAGRAM
+%% Shows object states when admin updates a user's role
+---
+
+classDiagram
+    class httpRequest ["httpRequest: HttpServletRequest"] {
+        method = "PATCH"
+        path = "/api/auth/users/john/role"
+        headers = {
+            "Authorization": "Bearer eyJhbGc...",
+            "Content-Type": "application/json"
+        }
+    }
+    
+    class authentication ["authentication: Authentication"] {
+        name = "admin"
+        authenticated = true
+        authorities = ["ROLE_ADMIN"]
+    }
+    
+    class roleUpdateRequest ["roleUpdateRequest: Map"] {
+        role = "ADMIN"
+    }
+    
+    class targetUsername ["targetUsername: String"] {
+        value = "john" (from path variable)
+    }
+    
+    class existingUserAuth ["existingUserAuth: User"] {
+        id = 2
+        username = "john"
+        password = "$2a$10$..."
+        email = "john@example.com"
+        role = Role.USER (OLD)
+    }
+    
+    class updatedUserAuth ["updatedUserAuth: User"] {
+        id = 2
+        username = "john"
+        password = "$2a$10$..."
+        email = "john@example.com"
+        role = Role.ADMIN (NEW)
+    }
+    
+    class sqlUpdateAuth ["sqlUpdateAuth: SQL"] {
+        query = "UPDATE users SET role = 'ADMIN' WHERE username = 'john'"
+        rowsAffected = 1
+        database = "auth_db"
+    }
+    
+    class syncRequest ["syncRequest: HTTP Request"] {
+        method = "PATCH"
+        url = "http://user-service:8082/api/users/username/john/role"
+        headers = {
+            "X-User-Id": "auth-service",
+            "X-Internal-Timestamp": "1735509800000",
+            "X-Internal-Signature": "Abc789XyZ..."
+        }
+        body = {
+            role: "ADMIN"
+        }
+    }
+    
+    class existingUserProfile ["existingUserProfile: UserProfile"] {
+        id = 2
+        username = "john"
+        email = "john@example.com"
+        role = "USER" (OLD)
+        firstName = "John"
+        lastName = "Doe"
+    }
+    
+    class updatedUserProfile ["updatedUserProfile: UserProfile"] {
+        id = 2
+        username = "john"
+        email = "john@example.com"
+        role = "ADMIN" (NEW)
+        firstName = "John"
+        lastName = "Doe"
+        updatedAt = "2025-12-29T23:25:00" (NEW)
+    }
+    
+    class sqlUpdateProfile ["sqlUpdateProfile: SQL"] {
+        query = "UPDATE user_profiles SET role = 'ADMIN', 
+                 updated_at = '2025-12-29T23:25:00' 
+                 WHERE username = 'john'"
+        rowsAffected = 1
+        database = "user_db"
+    }
+    
+    class responseEntity ["responseEntity: ResponseEntity"] {
+        status = 200 OK
+        body = {
+            message: "Role updated"
+        }
+    }
+    
+    %% Relationships
+    httpRequest --> authentication : "validates admin"
+    httpRequest --> roleUpdateRequest : "body parsed to"
+    httpRequest --> targetUsername : "extracts from path"
+    targetUsername --> existingUserAuth : "finds in Auth DB"
+    existingUserAuth --> updatedUserAuth : "role changed"
+    updatedUserAuth --> sqlUpdateAuth : "persisted via"
+    updatedUserAuth --> syncRequest : "triggers sync call"
+    syncRequest --> existingUserProfile : "finds in User DB"
+    existingUserProfile --> updatedUserProfile : "role updated"
+    updatedUserProfile --> sqlUpdateProfile : "persisted via"
+    updatedUserAuth --> responseEntity : "generates"
+    
+    note for sqlUpdateAuth "Updates role in Auth Service"
+    note for syncRequest "Syncs role to User Service"
+    note for sqlUpdateProfile "Updates role in User Service"
+    note for responseEntity "Role updated in both databases"

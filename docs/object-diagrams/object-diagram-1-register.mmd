@@ -1,0 +1,90 @@
+classDiagram
+    %% 1. REGISTER FLOW - OBJECT DIAGRAM
+    %% Shows object states during user registration
+
+    class registerRequest["registerRequest: RegisterRequest"] {
+        username = "newuser"
+        password = "password123"
+        email = "newuser@example.com"
+    }
+    
+    class newUser["newUser: User"] {
+        id = null
+        username = "newuser"
+        password = "$2a$10$..."
+        email = "newuser@example.com"
+        role = Role.USER
+    }
+    
+    class savedUser["savedUser: User"] {
+        id = 5
+        username = "newuser"
+        password = "$2a$10$..."
+        email = "newuser@example.com"
+        role = Role.USER
+    }
+    
+    class userProfileDTO["userProfileDTO: UserProfileDTO"] {
+        username = "newuser"
+        email = "newuser@example.com"
+        role = "USER"
+        firstName = ""
+        lastName = ""
+        phone = ""
+        address = ""
+    }
+    
+    class newUserProfile["newUserProfile: UserProfile"] {
+        id = null
+        username = "newuser"
+        email = "newuser@example.com"
+        role = "USER"
+        firstName = null
+        lastName = null
+        phone = null
+        address = null
+        createdAt = null
+        updatedAt = null
+    }
+    
+    class savedUserProfile["savedUserProfile: UserProfile"] {
+        id = 5
+        username = "newuser"
+        email = "newuser@example.com"
+        role = "USER"
+        firstName = null
+        lastName = null
+        phone = null
+        address = null
+        createdAt = "2025-12-29T23:00:00"
+        updatedAt = "2025-12-29T23:00:00"
+    }
+    
+    class jwtToken["jwtToken: String"] {
+        value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expiresAt = "2025-12-30T23:00:00"
+        subject = "newuser"
+        roles = "ROLE_USER"
+    }
+    
+    class authResponse["authResponse: AuthResponse"] {
+        token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        type = "Bearer"
+        username = "newuser"
+        message = "Login successful"
+    }
+    
+    %% Relationships (data flow)
+    registerRequest --> newUser : converted to
+    newUser --> savedUser : saved to DB
+    savedUser --> userProfileDTO : mapped to
+    userProfileDTO --> newUserProfile : converted to
+    newUserProfile --> savedUserProfile : saved to DB
+    savedUser --> jwtToken : generates
+    jwtToken --> authResponse : included in
+    
+    %% Notes
+    note for registerRequest "Input from Frontend"
+    note for savedUser "Stored in Auth DB"
+    note for savedUserProfile "Stored in User DB"
+    note for authResponse "Returned to Frontend"

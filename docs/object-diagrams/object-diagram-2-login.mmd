@@ -1,0 +1,91 @@
+---
+%% 2. LOGIN FLOW - OBJECT DIAGRAM
+%% Shows object states during user login (both admin and regular user)
+---
+
+classDiagram
+    class loginRequest ["loginRequest: LoginRequest"] {
+        username = "admin"
+        password = "admin"
+    }
+    
+    class existingUser ["existingUser: User"] {
+        id = 1
+        username = "admin"
+        password = "$2a$10$abcdef..." (BCrypt hash)
+        email = "admin@example.com"
+        role = Role.ADMIN
+    }
+    
+    class authentication ["authentication: UsernamePasswordAuthenticationToken"] {
+        principal = "admin"
+        credentials = "admin"
+        authenticated = false (before)
+        authorities = null
+    }
+    
+    class authenticatedToken ["authenticatedToken: UsernamePasswordAuthenticationToken"] {
+        principal = UserDetails(admin)
+        credentials = "[PROTECTED]"
+        authenticated = true
+        authorities = ["ROLE_ADMIN"]
+    }
+    
+    class jwtClaims ["jwtClaims: Map"] {
+        sub = "admin"
+        roles = ["ROLE_ADMIN"]
+        iat = 1735508400
+        exp = 1735594800
+    }
+    
+    class jwtToken ["jwtToken: String"] {
+        header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+        payload = "eyJzdWIiOiJhZG1pbiIsInJvbGVzIjpbIlJPTEVfQURNSU4iXX0"
+        signature = "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    }
+    
+    class authResponse ["authResponse: AuthResponse"] {
+        token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        type = "Bearer"
+        username = "admin"
+        message = "Login successful"
+    }
+    
+    class httpResponse ["httpResponse: ResponseEntity"] {
+        status = 200 OK
+        headers = ["Content-Type: application/json"]
+        body = authResponse
+    }
+    
+    %% Alternative flow for regular user
+    class regularUser ["regularUser: User"] {
+        id = 3
+        username = "john"
+        password = "$2a$10$xyz123..."
+        email = "john@example.com"
+        role = Role.USER
+    }
+    
+    class regularAuthResponse ["regularAuthResponse: AuthResponse"] {
+        token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        type = "Bearer"
+        username = "john"
+        message = "Login successful"
+    }
+    
+    %% Relationships - Admin Flow
+    loginRequest --> existingUser : "finds in DB"
+    loginRequest --> authentication : "creates"
+    authentication --> authenticatedToken : "authenticated by AuthManager"
+    existingUser --> jwtClaims : "user data mapped to"
+    jwtClaims --> jwtToken : "encoded to"
+    jwtToken --> authResponse : "included in"
+    authResponse --> httpResponse : "wrapped in"
+    
+    %% Alternative - Regular User
+    regularUser -.-> regularAuthResponse : "generates for USER role"
+    
+    note for loginRequest "Input from Frontend"
+    note for existingUser "Retrieved from Auth DB"
+    note for authenticatedToken "Spring Security Context"
+    note for httpResponse "Sent to Frontend with Set-Cookie/LocalStorage"

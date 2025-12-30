@@ -1,0 +1,73 @@
+classDiagram
+    %% 3. PROFILE VIEW - OBJECT DIAGRAM
+    %% Shows object states when user views their profile
+
+    class httpRequest["httpRequest: HttpServletRequest"] {
+        method = "GET"
+        path = "/api/users/me"
+        authorization = "Bearer eyJhbGc..."
+        userIdHeader = "john"
+        rolesHeader = "ROLE_USER"
+    }
+    
+    class jwtToken["jwtToken: String"] {
+        value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        valid = true
+        expired = false
+    }
+    
+    class extractedClaims["extractedClaims: Claims"] {
+        subject = "john"
+        roles = "ROLE_USER"
+        issuedAt = "2025-12-29T22:00:00"
+        expiresAt = "2025-12-30T22:00:00"
+    }
+    
+    class currentUsername["currentUsername: String"] {
+        value = "john"
+    }
+    
+    class userProfile["userProfile: UserProfile"] {
+        id = 3
+        username = "john"
+        email = "john@example.com"
+        role = "USER"
+        firstName = "John"
+        lastName = "Doe"
+        phone = "+90 555 123 4567"
+        address = "Istanbul, Turkey"
+        createdAt = "2025-12-20T10:00:00"
+        updatedAt = "2025-12-28T15:30:00"
+    }
+    
+    class responseEntity["responseEntity: ResponseEntity"] {
+        status = "200 OK"
+        headers = "Content-Type: application/json"
+        body = "userProfile"
+    }
+    
+    class jsonResponse["jsonResponse: JSON"] {
+        id = 3
+        username = "john"
+        email = "john@example.com"
+        role = "USER"
+        firstName = "John"
+        lastName = "Doe"
+        phone = "+90 555 123 4567"
+        address = "Istanbul, Turkey"
+        createdAt = "2025-12-20T10:00:00"
+        updatedAt = "2025-12-28T15:30:00"
+    }
+    
+    %% Relationships
+    httpRequest --> jwtToken : extracts
+    jwtToken --> extractedClaims : decodes to
+    extractedClaims --> currentUsername : extracts
+    currentUsername --> userProfile : finds
+    userProfile --> responseEntity : wrapped in
+    responseEntity --> jsonResponse : serialized to
+    
+    %% Notes
+    note for httpRequest "From API Gateway with JWT"
+    note for userProfile "Retrieved from User Service DB"
+    note for jsonResponse "Sent to Frontend"

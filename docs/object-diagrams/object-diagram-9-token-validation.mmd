@@ -1,0 +1,106 @@
+---
+%% 9. TOKEN VALIDATION - OBJECT DIAGRAM
+%% Shows object states during JWT token validation
+---
+
+classDiagram
+    class httpRequest ["httpRequest: HttpServletRequest"] {
+        method = "GET"
+        path = "/api/auth/validate"
+        headers = {
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        }
+    }
+    
+    class authHeader ["authHeader: String"] {
+        value = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        hasBearer = true
+        length = 200+ chars
+    }
+    
+    class extractedToken ["extractedToken: String"] {
+        value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." (Bearer removed)
+        parts = ["header", "payload", "signature"]
+    }
+    
+    class tokenHeader ["tokenHeader: JSON"] {
+        alg = "HS256"
+        typ = "JWT"
+    }
+    
+    class tokenPayload ["tokenPayload: Claims"] {
+        sub = "john" (subject/username)
+        roles = ["ROLE_USER"]
+        iat = 1735508400 (issued at)
+        exp = 1735594800 (expires at)
+    }
+    
+    class tokenSignature ["tokenSignature: String"] {
+        value = "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        algorithm = "HMAC-SHA256"
+    }
+    
+    class secretKey ["secretKey: SecretKey"] {
+        value = "my-super-secret-jwt-key-that-is-at-least-256-bits"
+        algorithm = "HmacSHA256"
+        encoded = true
+    }
+    
+    class verificationProcess ["verificationProcess: Validation"] {
+        signatureValid = true (recomputed signature matches)
+        notExpired = true (current time < exp)
+        notBefore = true (current time >= iat)
+        formatValid = true (valid JWT structure)
+        result = VALID
+    }
+    
+    class validationResult ["validationResult: Map"] {
+        valid = true
+    }
+    
+    %% Alternative - Invalid Token Scenario
+    class expiredToken ["expiredToken: Claims"] {
+        sub = "alice"
+        exp = 1735422000 (expired yesterday)
+        currentTime = 1735508400
+        isExpired = true
+    }
+    
+    class expiredValidation ["expiredValidation: Validation"] {
+        signatureValid = true
+        notExpired = false (EXPIRED)
+        result = INVALID
+    }
+    
+    class invalidResult ["invalidResult: Map"] {
+        valid = false
+        error = "Token has expired"
+    }
+    
+    class responseEntity ["responseEntity: ResponseEntity"] {
+        status = 200 OK
+        body = validationResult or invalidResult
+    }
+    
+    %% Relationships - Valid Token Flow
+    httpRequest --> authHeader : "extracts header"
+    authHeader --> extractedToken : "removes Bearer prefix"
+    extractedToken --> tokenHeader : "decodes header part"
+    extractedToken --> tokenPayload : "decodes payload part"
+    extractedToken --> tokenSignature : "extracts signature"
+    tokenHeader --> verificationProcess : "validates structure"
+    tokenPayload --> verificationProcess : "validates claims"
+    tokenSignature --> verificationProcess : "validates signature"
+    secretKey --> verificationProcess : "used for verification"
+    verificationProcess --> validationResult : "if valid, returns"
+    
+    %% Alternative - Expired Token
+    expiredToken -.-> expiredValidation : "expired token check"
+    expiredValidation -.-> invalidResult : "returns error"
+    
+    validationResult --> responseEntity : "valid response"
+    invalidResult -.-> responseEntity : "invalid response"
+    
+    note for verificationProcess "Validates: Signature + Expiry + Format"
+    note for validationResult "Token is valid, user can proceed"
+    note for invalidResult "Token invalid, redirect to login"

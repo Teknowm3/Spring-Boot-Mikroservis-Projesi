@@ -1,0 +1,102 @@
+---
+%% 5. ADMIN VIEW ALL USERS - OBJECT DIAGRAM
+%% Shows object states when admin views all users
+---
+
+classDiagram
+    class httpRequest ["httpRequest: HttpServletRequest"] {
+        method = "GET"
+        path = "/api/users"
+        headers = {
+            "Authorization": "Bearer eyJhbGc...",
+            "X-User-Id": "admin",
+            "X-Roles": "ROLE_ADMIN"
+        }
+    }
+    
+    class adminCheck ["adminCheck: boolean"] {
+        xRoles = "ROLE_ADMIN"
+        containsRoleAdmin = true
+        isAdmin = true
+        hasPermission = true
+    }
+    
+    class user1 ["user1: UserProfile"] {
+        id = 1
+        username = "admin"
+        email = "admin@example.com"
+        role = "ADMIN"
+        firstName = "Admin"
+        lastName = "User"
+    }
+    
+    class user2 ["user2: UserProfile"] {
+        id = 2
+        username = "john"
+        email = "john@example.com"
+        role = "USER"
+        firstName = "John"
+        lastName = "Doe"
+    }
+    
+    class user3 ["user3: UserProfile"] {
+        id = 3
+        username = "jane"
+        email = "jane@example.com"
+        role = "USER"
+        firstName = "Jane"
+        lastName = "Smith"
+    }
+    
+    class user4 ["user4: UserProfile"] {
+        id = 4
+        username = "alice"
+        email = "alice@example.com"
+        role = "ADMIN"
+        firstName = "Alice"
+        lastName = "Johnson"
+    }
+    
+    class usersList ["usersList: List~UserProfile~"] {
+        size = 4
+        elements = [user1, user2, user3, user4]
+    }
+    
+    class sqlQuery ["sqlQuery: SQL"] {
+        query = "SELECT * FROM user_profiles ORDER BY id"
+        rowCount = 4
+        executionTime = "15ms"
+    }
+    
+    class responseEntity ["responseEntity: ResponseEntity"] {
+        status = 200 OK
+        headers = ["Content-Type: application/json"]
+        body = usersList
+    }
+    
+    class jsonArray ["jsonArray: JSON Array"] {
+        value = [
+            {id:1, username:"admin", role:"ADMIN", ...},
+            {id:2, username:"john", role:"USER", ...},
+            {id:3, username:"jane", role:"USER", ...},
+            {id:4, username:"alice", role:"ADMIN", ...}
+        ]
+    }
+    
+    %% Relationships
+    httpRequest --> adminCheck : "validates admin role"
+    adminCheck --> sqlQuery : "if admin, executes"
+    sqlQuery --> user1 : "creates"
+    sqlQuery --> user2 : "creates"
+    sqlQuery --> user3 : "creates"
+    sqlQuery --> user4 : "creates"
+    user1 --> usersList : "added to"
+    user2 --> usersList : "added to"
+    user3 --> usersList : "added to"
+    user4 --> usersList : "added to"
+    usersList --> responseEntity : "wrapped in"
+    responseEntity --> jsonArray : "serialized to"
+    
+    note for adminCheck "Only admins can view all users"
+    note for sqlQuery "Fetches all profiles from DB"
+    note for jsonArray "Sent to Admin Dashboard"

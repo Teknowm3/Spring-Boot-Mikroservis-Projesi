@@ -1,0 +1,116 @@
+---
+%% 8. ADMIN DELETE USER - OBJECT DIAGRAM
+%% Shows object states when admin deletes a user
+---
+
+classDiagram
+    class httpRequest ["httpRequest: HttpServletRequest"] {
+        method = "DELETE"
+        path = "/api/auth/users/jane"
+        headers = {
+            "Authorization": "Bearer eyJhbGc...",
+            "X-User-Id": "admin",
+            "X-Roles": "ROLE_ADMIN"
+        }
+    }
+    
+    class authentication ["authentication: Authentication"] {
+        name = "admin"
+        authenticated = true
+        authorities = ["ROLE_ADMIN"]
+    }
+    
+    class targetUsername ["targetUsername: String"] {
+        value = "jane" (from path variable)
+    }
+    
+    class userToDeleteAuth ["userToDeleteAuth: User"] {
+        id = 3
+        username = "jane"
+        password = "$2a$10$..."
+        email = "jane@example.com"
+        role = Role.USER
+        status = "ACTIVE" (before delete)
+    }
+    
+    class sqlDeleteAuth ["sqlDeleteAuth: SQL"] {
+        query = "DELETE FROM users WHERE username = 'jane'"
+        rowsAffected = 1
+        database = "auth_db"
+        executedAt = "2025-12-29T23:30:00"
+    }
+    
+    class deletedUserAuth ["deletedUserAuth: User"] {
+        id = 3
+        username = "jane"
+        status = "DELETED"
+        existsInDB = false
+    }
+    
+    class deleteRequest ["deleteRequest: HTTP Request"] {
+        method = "DELETE"
+        url = "http://user-service:8082/api/users/username/jane"
+        headers = {
+            "X-User-Id": "auth-service",
+            "X-Internal-Timestamp": "1735510200000",
+            "X-Internal-Signature": "Def456GhI..."
+        }
+    }
+    
+    class userToDeleteProfile ["userToDeleteProfile: UserProfile"] {
+        id = 3
+        username = "jane"
+        email = "jane@example.com"
+        role = "USER"
+        firstName = "Jane"
+        lastName = "Smith"
+        status = "ACTIVE" (before delete)
+    }
+    
+    class sqlDeleteProfile ["sqlDeleteProfile: SQL"] {
+        query = "DELETE FROM user_profiles WHERE username = 'jane'"
+        rowsAffected = 1
+        database = "user_db"
+        executedAt = "2025-12-29T23:30:01"
+    }
+    
+    class deletedUserProfile ["deletedUserProfile: UserProfile"] {
+        id = 3
+        username = "jane"
+        status = "DELETED"
+        existsInDB = false
+    }
+    
+    class responseEntity ["responseEntity: ResponseEntity"] {
+        status = 200 OK
+        body = {
+            message: "User deleted",
+            username: "jane"
+        }
+    }
+    
+    class cascadeEffect ["cascadeEffect: Cascade"] {
+        authServiceDeleted = true
+        userServiceDeleted = true
+        jwtTokensInvalidated = true (future logins blocked)
+        activeSessionsTerminated = false (existing sessions expire naturally)
+    }
+    
+    %% Relationships
+    httpRequest --> authentication : "validates admin"
+    httpRequest --> targetUsername : "extracts from path"
+    targetUsername --> userToDeleteAuth : "finds in Auth DB"
+    userToDeleteAuth --> sqlDeleteAuth : "deleted via"
+    sqlDeleteAuth --> deletedUserAuth : "results in"
+    deletedUserAuth --> deleteRequest : "triggers cascade delete"
+    deleteRequest --> userToDeleteProfile : "finds in User DB"
+    userToDeleteProfile --> sqlDeleteProfile : "deleted via"
+    sqlDeleteProfile --> deletedUserProfile : "results in"
+    deletedUserAuth --> responseEntity : "generates"
+    deletedUserAuth --> cascadeEffect : "causes"
+    deletedUserProfile --> cascadeEffect : "contributes to"
+    
+    note for sqlDeleteAuth "Removes from Auth Service"
+    note for deleteRequest "Cascades to User Service"
+    note for sqlDeleteProfile "Removes from User Service"
+    note for cascadeEffect "User completely removed from system"
