@@ -1,75 +1,64 @@
----
-%% 4. PROFILE UPDATE - OBJECT DIAGRAM
-%% Shows object states when user updates their profile
----
-
 classDiagram
-    class httpRequest ["httpRequest: HttpServletRequest"] {
-        method = "PUT"
-        path = "/api/users/3"
-        headers = {
-            "Authorization": "Bearer eyJhbGc...",
-            "X-User-Id": "john",
-            "X-Roles": "ROLE_USER",
-            "Content-Type": "application/json"
-        }
+    class httpRequest["httpRequest: HttpServletRequest"] {
+        method: "PUT"
+        path: "/api/users/3"
+        Authorization: "Bearer eyJhbGc..."
+        X-User-Id: "john"
+        X-Roles: "ROLE_USER"
+        Content-Type: "application/json"
     }
     
-    class updateDTO ["updateDTO: UserProfileDTO"] {
-        id = 3
-        username = "john"
-        email = "john@example.com"
-        firstName = "John"
-        lastName = "Doe"
-        phone = "+90 555 999 8888" (UPDATED)
-        address = "Ankara, Turkey" (UPDATED)
+    class updateDTO["updateDTO: UserProfileDTO"] {
+        id: 3
+        username: "john"
+        email: "john@example.com"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "+90 555 999 8888 (UPDATED)"
+        address: "Ankara, Turkey (UPDATED)"
     }
     
-    class existingProfile ["existingProfile: UserProfile"] {
-        id = 3
-        username = "john"
-        email = "john@example.com"
-        role = "USER"
-        firstName = "John"
-        lastName = "Doe"
-        phone = "+90 555 123 4567" (OLD)
-        address = "Istanbul, Turkey" (OLD)
-        createdAt = "2025-12-20T10:00:00"
-        updatedAt = "2025-12-28T15:30:00" (OLD)
+    class existingProfile["existingProfile: UserProfile"] {
+        id: 3
+        username: "john"
+        email: "john@example.com"
+        role: "USER"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "+90 555 123 4567 (OLD)"
+        address: "Istanbul, Turkey (OLD)"
+        createdAt: "2025-12-20T10:00:00"
+        updatedAt: "2025-12-28T15:30:00 (OLD)"
     }
     
-    class authCheck ["authCheck: boolean"] {
-        isOwner = true (john == john)
-        isAdmin = false
-        canUpdate = true
+    class authCheck["authCheck: boolean"] {
+        isOwner: "true (john == john)"
+        isAdmin: false
+        canUpdate: true
     }
     
-    class updatedProfile ["updatedProfile: UserProfile"] {
-        id = 3
-        username = "john"
-        email = "john@example.com"
-        role = "USER" (unchanged)
-        firstName = "John"
-        lastName = "Doe"
-        phone = "+90 555 999 8888" (NEW)
-        address = "Ankara, Turkey" (NEW)
-        createdAt = "2025-12-20T10:00:00" (unchanged)
-        updatedAt = "2025-12-29T23:15:00" (NEW)
+    class updatedProfile["updatedProfile: UserProfile"] {
+        id: 3
+        username: "john"
+        email: "john@example.com"
+        role: "USER (unchanged)"
+        firstName: "John"
+        lastName: "Doe"
+        phone: "+90 555 999 8888 (NEW)"
+        address: "Ankara, Turkey (NEW)"
+        createdAt: "2025-12-20T10:00:00 (unchanged)"
+        updatedAt: "2025-12-29T23:15:00 (NEW)"
     }
     
-    class sqlUpdate ["sqlUpdate: SQL"] {
-        query = "UPDATE user_profiles SET 
-                 phone = '+90 555 999 8888',
-                 address = 'Ankara, Turkey',
-                 updated_at = '2025-12-29T23:15:00'
-                 WHERE id = 3"
-        rowsAffected = 1
+    class sqlUpdate["sqlUpdate: SQL"] {
+        query: "UPDATE user_profiles SET phone='+90 555 999 8888', address='Ankara, Turkey', updated_at='2025-12-29T23:15:00' WHERE id=3"
+        rowsAffected: 1
     }
     
-    class responseEntity ["responseEntity: ResponseEntity"] {
-        status = 200 OK
-        headers = ["Content-Type: application/json"]
-        body = updatedProfile
+    class responseEntity["responseEntity: ResponseEntity"] {
+        status: "200 OK"
+        headers: "Content-Type: application/json"
+        body: "updatedProfile"
     }
     
     %% Relationships

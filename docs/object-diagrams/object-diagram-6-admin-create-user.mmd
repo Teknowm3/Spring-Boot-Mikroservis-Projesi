@@ -1,115 +1,105 @@
 ---
-%% 6. ADMIN CREATE USER - OBJECT DIAGRAM
-%% Shows object states when admin creates a new user
+%% 7. ADMIN UPDATE ROLE - OBJECT DIAGRAM
+%% Shows object states when admin updates a user's role
 ---
 
 classDiagram
-    class httpRequest ["httpRequest: HttpServletRequest"] {
-        method = "POST"
-        path = "/api/auth/users"
-        headers = {
-            "Authorization": "Bearer eyJhbGc...",
-            "Content-Type": "application/json"
-        }
+    class httpRequest["httpRequest: HttpServletRequest"] {
+        method: "PATCH"
+        path: "/api/auth/users/john/role"
+        Authorization: "Bearer eyJhbGc..."
+        Content-Type: "application/json"
     }
     
-    class authentication ["authentication: Authentication"] {
-        name = "admin"
-        authenticated = true
-        authorities = ["ROLE_ADMIN"]
-        principal = UserDetails(admin)
+    class authentication["authentication: Authentication"] {
+        name: "admin"
+        authenticated: true
+        authorities: "ROLE_ADMIN"
     }
     
-    class adminCheck ["adminCheck: boolean"] {
-        authorities = ["ROLE_ADMIN"]
-        hasRoleAdmin = true
-        isAdmin = true
+    class roleUpdateRequest["roleUpdateRequest: Map"] {
+        role: "ADMIN"
     }
     
-    class createRequest ["createRequest: AdminCreateUserRequest"] {
-        username = "bob"
-        password = "password123"
-        email = "bob@example.com"
-        role = "USER"
+    class targetUsername["targetUsername: String"] {
+        value: "john (from path variable)"
     }
     
-    class newUserAuth ["newUserAuth: User"] {
-        id = null (before save)
-        username = "bob"
-        password = "$2a$10$newHash..." (BCrypt)
-        email = "bob@example.com"
-        role = Role.USER
+    class existingUserAuth["existingUserAuth: User"] {
+        id: 2
+        username: "john"
+        password: "$2a$10$..."
+        email: "john@example.com"
+        role: "Role.USER (OLD)"
     }
     
-    class savedUserAuth ["savedUserAuth: User"] {
-        id = 7
-        username = "bob"
-        password = "$2a$10$newHash..."
-        email = "bob@example.com"
-        role = Role.USER
+    class updatedUserAuth["updatedUserAuth: User"] {
+        id: 2
+        username: "john"
+        password: "$2a$10$..."
+        email: "john@example.com"
+        role: "Role.ADMIN (NEW)"
     }
     
-    class internalRequest ["internalRequest: HTTP Request"] {
-        method = "POST"
-        url = "http://user-service:8082/api/users"
-        headers = {
-            "X-User-Id": "auth-service",
-            "X-Roles": "ROLE_USER",
-            "X-Internal-Timestamp": "1735509600000",
-            "X-Internal-Signature": "XyZ123ABC..."
-        }
-        body = {
-            username: "bob",
-            email: "bob@example.com",
-            role: "USER"
-        }
+    class sqlUpdateAuth["sqlUpdateAuth: SQL"] {
+        query: "UPDATE users SET role='ADMIN' WHERE username='john'"
+        rowsAffected: 1
+        database: "auth_db"
     }
     
-    class newUserProfile ["newUserProfile: UserProfile"] {
-        id = null (before save)
-        username = "bob"
-        email = "bob@example.com"
-        role = "USER"
-        firstName = null
-        lastName = null
-        phone = null
-        address = null
+    class syncRequest["syncRequest: HTTP Request"] {
+        method: "PATCH"
+        url: "http://user-service:8082/api/users/username/john/role"
+        X-User-Id: "auth-service"
+        X-Internal-Timestamp: "1735509800000"
+        X-Internal-Signature: "Abc789XyZ..."
+        body: "{ role: ADMIN }"
     }
     
-    class savedUserProfile ["savedUserProfile: UserProfile"] {
-        id = 7
-        username = "bob"
-        email = "bob@example.com"
-        role = "USER"
-        firstName = null
-        lastName = null
-        phone = null
-        address = null
-        createdAt = "2025-12-29T23:20:00"
-        updatedAt = "2025-12-29T23:20:00"
+    class existingUserProfile["existingUserProfile: UserProfile"] {
+        id: 2
+        username: "john"
+        email: "john@example.com"
+        role: "USER (OLD)"
+        firstName: "John"
+        lastName: "Doe"
     }
     
-    class responseEntity ["responseEntity: ResponseEntity"] {
-        status = 201 CREATED
-        body = {
-            message: "User created",
-            username: "bob",
-            role: "USER"
-        }
+    class updatedUserProfile["updatedUserProfile: UserProfile"] {
+        id: 2
+        username: "john"
+        email: "john@example.com"
+        role: "ADMIN (NEW)"
+        firstName: "John"
+        lastName: "Doe"
+        updatedAt: "2025-12-29T23:25:00 (NEW)"
+    }
+    
+    class sqlUpdateProfile["sqlUpdateProfile: SQL"] {
+        query: "UPDATE user_profiles SET role='ADMIN', updated_at='2025-12-29T23:25:00' WHERE username='john'"
+        rowsAffected: 1
+        database: "user_db"
+    }
+    
+    class responseEntity["responseEntity: ResponseEntity"] {
+        status: "200 OK"
+        body: "{ message: Role updated }"
     }
     
     %% Relationships
-    httpRequest --> authentication : "extracts from SecurityContext"
-    authentication --> adminCheck : "validates role"
-    httpRequest --> createRequest : "request body parsed to"
-    createRequest --> newUserAuth : "converted to"
-    newUserAuth --> savedUserAuth : "saved to Auth DB"
-    savedUserAuth --> internalRequest : "triggers"
-    internalRequest --> newUserProfile : "creates in User Service"
-    newUserProfile --> savedUserProfile : "saved to User DB"
-    savedUserAuth --> responseEntity : "generates"
+    httpRequest --> authentication : "validates admin"
+    httpRequest --> roleUpdateRequest : "body parsed to"
+    httpRequest --> targetUsername : "extracts from path"
+    targetUsername --> existingUserAuth : "finds in Auth DB"
+    existingUserAuth --> updatedUserAuth : "role changed"
+    updatedUserAuth --> sqlUpdateAuth : "persisted via"
+    updatedUserAuth --> syncRequest : "triggers sync call"
+    syncRequest --> existingUserProfile : "finds in User DB"
+    existingUserProfile --> updatedUserProfile : "role updated"
+    updatedUserProfile --> sqlUpdateProfile : "persisted via"
+    updatedUserAuth --> responseEntity : "generates"
     
-    note for adminCheck "Only admins can create users"
-    note for savedUserAuth "Stored in Auth Service DB"
-    note for internalRequest "Internal service-to-service call"
-    note for savedUserProfile "Stored in User Service DB"
+    note for sqlUpdateAuth "Updates role in Auth Service"
+    note for syncRequest "Syncs role to User Service"
+    note for sqlUpdateProfile "Updates role in User Service"
+    note for responseEntity "Role updated in both databases"
